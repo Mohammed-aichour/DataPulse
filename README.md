@@ -189,8 +189,8 @@ DataPulse/
 
 ### Step 1: Clone & Setup Virtual Environment
 ```bash
-git clone https://github.com/mohamed/datapulse.git
-cd datapulse
+git clone https://github.com/Mohammed-aichour/DataPulse.git
+cd DataPulse
 
 python -m venv .venv
 # Windows:
