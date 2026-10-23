@@ -5,13 +5,13 @@ Data Pipeline Orchestration & Execution Endpoints
 from typing import Any, Dict, List
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
-from DataPulse.backend.app.schemas.schemas import PipelineRunResponse
-from DataPulse.database.connection import get_db
-from DataPulse.database.models import (
+from backend.app.schemas.schemas import PipelineRunResponse
+from database.connection import get_db
+from database.models import (
     AcademicRecordModel, CourseModel, DataImportModel,
     PipelineExecutionModel, StudentModel
 )
-from DataPulse.src.pipeline.run import run_pipeline
+from src.pipeline.run import run_pipeline
 
 router = APIRouter(prefix="/pipeline", tags=["Pipeline"])
 

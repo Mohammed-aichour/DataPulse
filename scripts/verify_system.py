@@ -19,10 +19,10 @@ for p in [str(root_dir), str(parent_of_root)]:
         sys.path.insert(0, p)
 
 try:
-    from DataPulse.database.connection import SessionLocal, engine
-    from DataPulse.database.models import AcademicRecordModel, CourseModel, StudentModel
-    from DataPulse.src.ml.predictor import PredictorService, StudentPredictionInput
-    from DataPulse.backend.app.main import app
+    from database.connection import SessionLocal, engine
+    from database.models import AcademicRecordModel, CourseModel, StudentModel
+    from src.ml.predictor import PredictorService, StudentPredictionInput
+    from backend.app.main import app
 except ImportError:
     from database.connection import SessionLocal, engine
     from database.models import AcademicRecordModel, CourseModel, StudentModel

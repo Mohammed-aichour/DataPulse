@@ -330,8 +330,8 @@ class ModelTrainer:
 
 
 if __name__ == "__main__":
-    from DataPulse.src.ingestion.dataset_loader import DatasetLoader
-    from DataPulse.src.preprocessing.transformer import EducationalTransformer
+    from src.ingestion.dataset_loader import DatasetLoader
+    from src.preprocessing.transformer import EducationalTransformer
 
     loader = DatasetLoader()
     df_mat, df_por, _ = loader.load_raw_datasets()

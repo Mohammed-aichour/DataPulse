@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import Integer, func, text
 from sqlalchemy.orm import Session
-from DataPulse.database.connection import SessionLocal
-from DataPulse.database.models import AcademicRecordModel, CourseModel, DataImportModel, PipelineExecutionModel, StudentModel
+from database.connection import SessionLocal
+from database.models import AcademicRecordModel, CourseModel, DataImportModel, PipelineExecutionModel, StudentModel
 
 
 class CampusAnalyticsEngine:

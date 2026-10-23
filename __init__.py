@@ -1,6 +1,6 @@
 """
-DataPulse — Smart Campus Analytics & Predictive Intelligence Platform
-Package root initialization.
+DataPulse package initialization.
+Binds DataPulse namespace and synchronizes sys.modules to prevent duplicate module loads.
 """
 
 import sys
@@ -17,4 +17,4 @@ if "DataPulse" not in sys.modules:
     dp.__path__ = [str(ROOT_DIR)]
     sys.modules["DataPulse"] = dp
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"

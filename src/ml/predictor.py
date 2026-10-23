@@ -15,8 +15,8 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from DataPulse.database.connection import SessionLocal
-from DataPulse.database.models import PredictionLogModel
+from database.connection import SessionLocal
+from database.models import PredictionLogModel
 
 
 class StudentPredictionInput(BaseModel):

@@ -18,14 +18,14 @@ parent_of_root = root_dir.parent
 if str(parent_of_root) not in sys.path:
     sys.path.insert(0, str(parent_of_root))
 
-from DataPulse.backend.app.api.analytics import router as analytics_router
-from DataPulse.backend.app.api.export import router as export_router
-from DataPulse.backend.app.api.health import router as health_router
-from DataPulse.backend.app.api.ml import router as ml_router
-from DataPulse.backend.app.api.pipeline import router as pipeline_router
-from DataPulse.backend.app.api.students import router as students_router
-from DataPulse.backend.app.core.config import settings
-from DataPulse.database.connection import init_db
+from backend.app.api.analytics import router as analytics_router
+from backend.app.api.export import router as export_router
+from backend.app.api.health import router as health_router
+from backend.app.api.ml import router as ml_router
+from backend.app.api.pipeline import router as pipeline_router
+from backend.app.api.students import router as students_router
+from backend.app.core.config import settings
+from database.connection import init_db
 
 
 @asynccontextmanager

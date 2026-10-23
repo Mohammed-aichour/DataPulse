@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements
+# Copy packaging configuration and backend requirements
+COPY pyproject.toml setup.py alembic.ini /app/
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
@@ -30,7 +31,10 @@ COPY data /app/data
 COPY models_artifacts /app/models_artifacts
 COPY reports /app/reports
 
+# Install local package in editable mode
+RUN pip install --no-cache-dir -e .
+
 EXPOSE 8000
 
-# Run pipeline check & start uvicorn
-CMD ["sh", "-c", "python -m src.pipeline.run && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"]
+# Auto-execute migrations, run initial ETL load, and start Uvicorn
+CMD ["sh", "-c", "alembic upgrade head && python -m etl.run && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"]

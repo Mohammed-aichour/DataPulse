@@ -5,11 +5,11 @@ Student Directory & Detail Endpoints
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from DataPulse.backend.app.schemas.schemas import (
+from backend.app.schemas.schemas import (
     PaginatedStudents, StudentDetail, StudentListItem, StudentRecordSummary
 )
-from DataPulse.database.connection import get_db
-from DataPulse.database.models import AcademicRecordModel, StudentModel
+from database.connection import get_db
+from database.models import AcademicRecordModel, StudentModel
 
 router = APIRouter(prefix="/students", tags=["Students"])
 

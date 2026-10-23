@@ -14,7 +14,7 @@ for p in [str(root_dir), str(parent_of_root)]:
         sys.path.insert(0, p)
 
 try:
-    from DataPulse.backend.app.main import app
+    from backend.app.main import app
 except ImportError:
     from backend.app.main import app
 

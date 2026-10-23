@@ -19,8 +19,8 @@ for p in [str(root_dir), str(parent_of_root)]:
         sys.path.insert(0, p)
 
 try:
-    from DataPulse.database.connection import engine, init_db, SessionLocal
-    from DataPulse.database.models import Base
+    from database.connection import engine, init_db, SessionLocal
+    from database.models import Base
 except ImportError:
     from database.connection import engine, init_db, SessionLocal
     from database.models import Base

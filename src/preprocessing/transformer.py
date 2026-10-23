@@ -185,7 +185,7 @@ class EducationalTransformer:
 
 
 if __name__ == "__main__":
-    from DataPulse.src.ingestion.dataset_loader import DatasetLoader
+    from src.ingestion.dataset_loader import DatasetLoader
 
     loader = DatasetLoader()
     df_mat, df_por, _ = loader.load_raw_datasets()

@@ -5,12 +5,12 @@ Educational Analytics API Endpoints
 from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from DataPulse.backend.app.schemas.schemas import (
+from backend.app.schemas.schemas import (
     CorrelationItem, CoursePerformance, FactorPerformance,
     GradeDistributionBin, OverviewKPIs
 )
-from DataPulse.database.connection import get_db
-from DataPulse.src.analytics.metrics import CampusAnalyticsEngine
+from database.connection import get_db
+from src.analytics.metrics import CampusAnalyticsEngine
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 

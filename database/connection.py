@@ -1,32 +1,54 @@
 """
 DataPulse Database Connection Management
-Supports PostgreSQL (Production/Docker) with graceful SQLite fallback for local development & testing.
+Supports PostgreSQL 16 (Production/Docker) with graceful SQLite fallback for local development & testing.
+Configures robust connection pooling, pre-ping health validation, and transaction lifecycles.
 """
 
 import os
 from pathlib import Path
 from typing import Generator
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# Base directory for default SQLite storage
+# Load environment variables from .env file if available
 BASE_DIR = Path(__file__).resolve().parent.parent
+dotenv_path = BASE_DIR / ".env"
+if dotenv_path.exists():
+    load_dotenv(dotenv_path)
+
 DEFAULT_SQLITE_URL = f"sqlite:///{BASE_DIR / 'datapulse.db'}"
 
 DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 is_sqlite = DATABASE_URL.startswith("sqlite")
 
-connect_args = {"check_same_thread": False} if is_sqlite else {}
+if is_sqlite:
+    # Resolve relative sqlite paths consistently relative to BASE_DIR
+    raw_path = DATABASE_URL.replace("sqlite:///", "")
+    p = Path(raw_path)
+    if not p.is_absolute():
+        DATABASE_URL = f"sqlite:///{(BASE_DIR / p).resolve()}"
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-    echo=False
-)
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "echo": os.getenv("SQL_ECHO", "false").lower() == "true",
+}
+
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL connection pool tuning
+    engine_kwargs["pool_size"] = int(os.getenv("DB_POOL_SIZE", "10"))
+    engine_kwargs["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+    engine_kwargs["pool_recycle"] = int(os.getenv("DB_POOL_RECYCLE", "1800"))
+    engine_kwargs["pool_timeout"] = int(os.getenv("DB_POOL_TIMEOUT", "30"))
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -43,6 +65,8 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db():
     """Initializes all database tables registered with Base."""
-    # Import models to ensure they are registered with metadata
-    import DataPulse.database.models  # noqa
+    try:
+        import database.models  # noqa
+    except ModuleNotFoundError:
+        import database.models  # noqa
     Base.metadata.create_all(bind=engine)

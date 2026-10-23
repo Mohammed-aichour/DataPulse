@@ -11,11 +11,18 @@ from typing import Dict, List, Optional
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from DataPulse.database.connection import SessionLocal, engine, init_db
-from DataPulse.database.models import (
-    AcademicRecordModel, CourseModel, DataImportModel,
-    PipelineExecutionModel, StudentModel
-)
+try:
+    from database.connection import SessionLocal, engine, init_db
+    from database.models import (
+        AcademicRecordModel, CourseModel, DataImportModel,
+        PipelineExecutionModel, StudentModel
+    )
+except ImportError:
+    from database.connection import SessionLocal, engine, init_db
+    from database.models import (
+        AcademicRecordModel, CourseModel, DataImportModel,
+        PipelineExecutionModel, StudentModel
+    )
 
 
 class DatabaseLoader:
@@ -127,8 +134,11 @@ class DatabaseLoader:
             for _, row in records_df.iterrows():
                 rid = str(row["record_id"])
                 if rid in existing_map:
-                    # Update metrics
+                    # Update metrics & identifiers
                     curr = existing_map[rid]
+                    curr.student_id = str(row["student_id"])
+                    curr.course_id = int(row["course_id"])
+                    curr.course_code = str(row["course_code"])
                     curr.g1 = int(row["G1"])
                     curr.g2 = int(row["G2"])
                     curr.g3 = int(row["G3"])

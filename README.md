@@ -202,9 +202,12 @@ pip install -r backend/requirements.txt
 pip install -e .
 ```
 
-### Step 2: Database Initialization & Seeding
+### Step 2: Database Initialization, Migrations & Seeding
 ```bash
-# Initialize schema and compile analytical SQL views
+# Apply version-controlled Alembic migrations
+alembic upgrade head
+
+# Compile analytical SQL views
 python scripts/init_db.py
 
 # Run dedicated ETL pipeline (Extract -> Validate -> Transform -> Load)
@@ -228,7 +231,7 @@ python -m ml.evaluate
 # Run end-to-end system smoke test
 python scripts/verify_system.py
 
-# Execute full pytest suite (23 integration and API tests)
+# Execute full pytest suite (29 integration, database, and API tests)
 pytest -v
 ```
 
@@ -253,40 +256,46 @@ npm run dev
 ```bash
 docker compose up --build -d
 ```
-- **PostgreSQL 16**: Port `5432` with persistent volume `postgres_data`
-- **FastAPI Backend**: Port `8000` (auto-runs pipeline check & schema migration on startup)
+- **PostgreSQL 16**: Port `127.0.0.1:5432` with persistent volume `postgres_data` and healthcheck
+- **FastAPI Backend**: Port `8000` (auto-runs Alembic migrations, ETL pipeline check, and serves REST API)
 - **React Frontend (Nginx)**: Port `3000`
 
 ---
 
 ## 9. Automated Testing & Verification Summary
 
-Full Pytest suite execution:
+Full Pytest suite execution across all 29 integration and API tests:
 ```text
-tests/test_pipeline_and_api.py::test_dataset_authenticity_and_hashes PASSED [  4%]
-tests/test_pipeline_and_api.py::test_multi_pillar_data_quality_framework PASSED [  8%]
-tests/test_pipeline_and_api.py::test_entity_linkage_zero_intra_course_duplicates PASSED [ 13%]
-tests/test_pipeline_and_api.py::test_database_idempotency PASSED         [ 17%]
-tests/test_pipeline_and_api.py::test_ml_three_horizon_scenarios PASSED   [ 21%]
-tests/test_pipeline_and_api.py::test_api_health PASSED                   [ 26%]
-tests/test_pipeline_and_api.py::test_api_info PASSED                     [ 30%]
-tests/test_pipeline_and_api.py::test_api_analytics_overview PASSED       [ 34%]
-tests/test_pipeline_and_api.py::test_api_analytics_courses PASSED        [ 39%]
-tests/test_pipeline_and_api.py::test_api_analytics_distribution PASSED   [ 43%]
-tests/test_pipeline_and_api.py::test_api_analytics_performance_factors PASSED [ 47%]
-tests/test_pipeline_and_api.py::test_api_analytics_correlations PASSED   [ 52%]
-tests/test_pipeline_and_api.py::test_api_students_list_and_filter PASSED [ 56%]
-tests/test_pipeline_and_api.py::test_api_student_detail PASSED           [ 60%]
-tests/test_pipeline_and_api.py::test_api_ml_evaluation_and_predict PASSED [ 65%]
-tests/test_pipeline_and_api.py::test_api_export_csv PASSED               [ 69%]
-tests/test_pipeline_and_api.py::test_api_powerbi_spec PASSED             [ 73%]
-backend/tests/test_api_endpoints.py::test_health_check PASSED            [ 78%]
-backend/tests/test_api_endpoints.py::test_system_info PASSED             [ 82%]
-backend/tests/test_api_endpoints.py::test_analytics_overview PASSED      [ 86%]
-backend/tests/test_api_endpoints.py::test_students_pagination PASSED     [ 91%]
-backend/tests/test_api_endpoints.py::test_predict_scenario_a PASSED      [ 95%]
+tests/test_database_integration.py::test_alembic_clean_schema_migration PASSED [  3%]
+tests/test_database_integration.py::test_views_compilation_and_querying PASSED [  6%]
+tests/test_database_integration.py::test_idempotent_etl_data_loading PASSED [ 10%]
+tests/test_database_integration.py::test_unique_constraint_prevents_duplicate_enrollment PASSED [ 13%]
+tests/test_database_integration.py::test_database_views_return_real_data PASSED [ 17%]
+tests/test_database_integration.py::test_unreachable_database_error_handling PASSED [ 20%]
+tests/test_pipeline_and_api.py::test_dataset_authenticity_and_hashes PASSED [ 24%]
+tests/test_pipeline_and_api.py::test_multi_pillar_data_quality_framework PASSED [ 27%]
+tests/test_pipeline_and_api.py::test_entity_linkage_zero_intra_course_duplicates PASSED [ 31%]
+tests/test_pipeline_and_api.py::test_database_idempotency PASSED         [ 34%]
+tests/test_pipeline_and_api.py::test_ml_three_horizon_scenarios PASSED   [ 37%]
+tests/test_pipeline_and_api.py::test_api_health PASSED                   [ 41%]
+tests/test_pipeline_and_api.py::test_api_info PASSED                     [ 44%]
+tests/test_pipeline_and_api.py::test_api_analytics_overview PASSED       [ 48%]
+tests/test_pipeline_and_api.py::test_api_analytics_courses PASSED        [ 51%]
+tests/test_pipeline_and_api.py::test_api_analytics_distribution PASSED   [ 55%]
+tests/test_pipeline_and_api.py::test_api_analytics_performance_factors PASSED [ 58%]
+tests/test_pipeline_and_api.py::test_api_analytics_correlations PASSED   [ 62%]
+tests/test_pipeline_and_api.py::test_api_students_list_and_filter PASSED [ 65%]
+tests/test_pipeline_and_api.py::test_api_student_detail PASSED           [ 68%]
+tests/test_pipeline_and_api.py::test_api_ml_evaluation_and_predict PASSED [ 72%]
+tests/test_pipeline_and_api.py::test_api_export_csv PASSED               [ 75%]
+tests/test_pipeline_and_api.py::test_api_powerbi_spec PASSED             [ 79%]
+backend/tests/test_api_endpoints.py::test_health_check PASSED            [ 82%]
+backend/tests/test_api_endpoints.py::test_system_info PASSED             [ 86%]
+backend/tests/test_api_endpoints.py::test_analytics_overview PASSED      [ 89%]
+backend/tests/test_api_endpoints.py::test_students_pagination PASSED     [ 93%]
+backend/tests/test_api_endpoints.py::test_predict_scenario_a PASSED      [ 96%]
 backend/tests/test_api_endpoints.py::test_predict_scenario_c PASSED      [100%]
-======================= 23 passed in 4.99s (100% pass rate) =======================
+======================= 29 passed in 9.45s (100% pass rate) =======================
 ```
 
 Frontend production build verification:

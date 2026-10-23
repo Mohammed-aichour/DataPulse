@@ -6,9 +6,9 @@ Provides multi-scenario evaluation metrics and real-time inference.
 from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from DataPulse.backend.app.schemas.schemas import PredictionRequest, PredictionResponse
-from DataPulse.database.connection import get_db
-from DataPulse.src.ml.predictor import PredictorService, StudentPredictionInput
+from backend.app.schemas.schemas import PredictionRequest, PredictionResponse
+from database.connection import get_db
+from src.ml.predictor import PredictorService, StudentPredictionInput
 
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 

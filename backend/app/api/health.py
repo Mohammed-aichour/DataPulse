@@ -6,11 +6,11 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from DataPulse.backend.app.core.config import settings
-from DataPulse.backend.app.schemas.schemas import HealthResponse, InfoResponse
-from DataPulse.database.connection import get_db
-from DataPulse.database.models import AcademicRecordModel, StudentModel
-from DataPulse.src.ml.predictor import PredictorService
+from backend.app.core.config import settings
+from backend.app.schemas.schemas import HealthResponse, InfoResponse
+from database.connection import get_db
+from database.models import AcademicRecordModel, StudentModel
+from src.ml.predictor import PredictorService
 
 router = APIRouter(tags=["System"])
 

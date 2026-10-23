@@ -18,14 +18,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 try:
-    from DataPulse.backend.app.main import app
-    from DataPulse.database.connection import SessionLocal
-    from DataPulse.database.models import StudentModel, AcademicRecordModel, CourseModel
-    from DataPulse.src.ingestion.dataset_loader import DatasetLoader
-    from DataPulse.src.preprocessing.validator import DataValidator
-    from DataPulse.src.preprocessing.transformer import EducationalTransformer
-    from DataPulse.src.ml.predictor import PredictorService, StudentPredictionInput
-    from DataPulse.src.pipeline.db_loader import DatabaseLoader
+    from database.connection import SessionLocal
+    from database.models import StudentModel, AcademicRecordModel, CourseModel
+    from backend.app.main import app
+    from src.ingestion.dataset_loader import DatasetLoader
+    from src.preprocessing.validator import DataValidator
+    from src.preprocessing.transformer import EducationalTransformer
+    from src.ml.predictor import PredictorService, StudentPredictionInput
+    from src.pipeline.db_loader import DatabaseLoader
 except ImportError:
     from backend.app.main import app
     from database.connection import SessionLocal

@@ -17,11 +17,11 @@ for p in [str(root_dir), str(parent_of_root)]:
         sys.path.insert(0, p)
 
 try:
-    from DataPulse.src.ingestion.dataset_loader import DatasetLoader
-    from DataPulse.src.preprocessing.validator import DataValidator
-    from DataPulse.src.preprocessing.transformer import EducationalTransformer
-    from DataPulse.src.pipeline.db_loader import DatabaseLoader
-    from DataPulse.src.ml.trainer import ModelTrainer
+    from src.ingestion.dataset_loader import DatasetLoader
+    from src.preprocessing.validator import DataValidator
+    from src.preprocessing.transformer import EducationalTransformer
+    from src.pipeline.db_loader import DatabaseLoader
+    from src.ml.trainer import ModelTrainer
 except ImportError:
     from src.ingestion.dataset_loader import DatasetLoader
     from src.preprocessing.validator import DataValidator

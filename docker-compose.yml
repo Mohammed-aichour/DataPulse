@@ -6,15 +6,16 @@ services:
     container_name: datapulse_db
     restart: always
     environment:
-      POSTGRES_USER: datapulse_user
-      POSTGRES_PASSWORD: datapulse_secure_password
-      POSTGRES_DB: datapulse_db
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-datapulse_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse_db}
+    # Bind to 127.0.0.1 loopback only to prevent public exposure
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U datapulse_user -d datapulse_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-datapulse_user} -d ${POSTGRES_DB:-datapulse_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,8 +30,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://datapulse_user:datapulse_secure_password@db:5432/datapulse_db
-      JWT_SECRET: datapulse-production-secret-key-uia-agadir-2026
+      DATABASE_URL: postgresql://${POSTGRES_USER:-datapulse_user}:${POSTGRES_PASSWORD:-datapulse_secure_password}@db:5432/${POSTGRES_DB:-datapulse_db}
+      JWT_SECRET: ${JWT_SECRET:-datapulse-production-secret-key-uia-agadir-2026}
       DEBUG: "false"
       CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:80"]'
     ports:

@@ -10,7 +10,7 @@ from sqlalchemy import (
     Integer, String, Text, UniqueConstraint, Index
 )
 from sqlalchemy.orm import relationship
-from DataPulse.database.connection import Base
+from database.connection import Base
 
 
 def utc_now():
@@ -103,6 +103,7 @@ class AcademicRecordModel(Base):
     course = relationship("CourseModel", back_populates="records")
 
     __table_args__ = (
+        UniqueConstraint("student_id", "course_id", name="uq_student_course"),
         Index("idx_student_course", "student_id", "course_id"),
     )
 

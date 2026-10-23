@@ -21,9 +21,9 @@ for p in [str(root_dir), str(parent_of_root)]:
         sys.path.insert(0, p)
 
 try:
-    from DataPulse.src.ingestion.dataset_loader import DatasetLoader
-    from DataPulse.src.preprocessing.transformer import EducationalTransformer
-    from DataPulse.src.ml.trainer import ModelTrainer
+    from src.ingestion.dataset_loader import DatasetLoader
+    from src.preprocessing.transformer import EducationalTransformer
+    from src.ml.trainer import ModelTrainer
 except ImportError:
     from src.ingestion.dataset_loader import DatasetLoader
     from src.preprocessing.transformer import EducationalTransformer

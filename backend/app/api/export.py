@@ -9,8 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 import pandas as pd
 from sqlalchemy.orm import Session
-from DataPulse.database.connection import get_db
-from DataPulse.database.models import AcademicRecordModel, CourseModel, StudentModel
+from database.connection import get_db
+from database.models import AcademicRecordModel, CourseModel, StudentModel
 
 router = APIRouter(prefix="/export", tags=["Export & Power BI"])
 
