@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-10-23T13:03:31.373797+00:00",
+  "dataset_name": "Math Course",
+  "total_records": 395,
+  "total_columns": 33,
+  "missing_values_count": 0,
+  "missing_values_by_column": {},
+  "duplicate_rows_count": 0,
+  "schema_conformance_rate": 100.0,
+  "outlier_count_by_column": {
+    "age": 1,
+    "absences": 15,
+    "G1": 0,
+    "G2": 13,
+    "G3": 0
+  },
+  "target_stats": {
+    "mean": 10.415189873417722,
+    "std": 4.5814426109978434,
+    "min": 0.0,
+    "median": 11.0,
+    "max": 20.0,
+    "pass_rate_pct": 67.08860759493672,
+    "zero_scores_count": 38
+  },
+  "quality_score": 100.0,
+  "status": "PASSED",
+  "issues": []
+}

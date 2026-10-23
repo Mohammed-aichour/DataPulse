@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-10-23T13:03:31.438196+00:00",
+  "dataset_name": "Portuguese Course",
+  "total_records": 649,
+  "total_columns": 33,
+  "missing_values_count": 0,
+  "missing_values_by_column": {},
+  "duplicate_rows_count": 0,
+  "schema_conformance_rate": 100.0,
+  "outlier_count_by_column": {
+    "age": 1,
+    "absences": 21,
+    "G1": 16,
+    "G2": 25,
+    "G3": 16
+  },
+  "target_stats": {
+    "mean": 11.906009244992296,
+    "std": 3.230656242804805,
+    "min": 0.0,
+    "median": 12.0,
+    "max": 19.0,
+    "pass_rate_pct": 84.59167950693374,
+    "zero_scores_count": 15
+  },
+  "quality_score": 100.0,
+  "status": "PASSED",
+  "issues": []
+}

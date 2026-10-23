@@ -1,0 +1,517 @@
+{
+  "trained_at": "2026-10-23T13:33:58.271143+00:00",
+  "framework": "3-Horizon Multi-Scenario Anti-Leakage Framework",
+  "active_default_scenario": "scenario_c",
+  "scenarios": {
+    "scenario_a": {
+      "scenario_name": "Scenario A \u2014 Early Intake Risk Warning",
+      "description": "Pre-term orientation prediction using only demographic, family, lifestyle, and past academic history. Zero grade information used.",
+      "features_used": [
+        "school",
+        "sex",
+        "address",
+        "famsize",
+        "Pstatus",
+        "Mjob",
+        "Fjob",
+        "reason",
+        "guardian",
+        "schoolsup",
+        "famsup",
+        "paid",
+        "activities",
+        "nursery",
+        "higher",
+        "internet",
+        "romantic",
+        "course_code",
+        "age",
+        "Medu",
+        "Fedu",
+        "traveltime",
+        "studytime",
+        "failures",
+        "famrel",
+        "freetime",
+        "goout",
+        "Dalc",
+        "Walc",
+        "health",
+        "absences",
+        "parent_edu_avg",
+        "alcohol_index",
+        "study_to_social_ratio"
+      ],
+      "best_classifier": "Random Forest Classifier",
+      "best_regressor": "Gradient Boosting Regressor",
+      "classification": {
+        "Logistic Regression": {
+          "model_name": "Logistic Regression",
+          "accuracy": 0.8134,
+          "precision": 0.64,
+          "recall": 0.3478,
+          "f1_score": 0.4507,
+          "roc_auc": 0.7739,
+          "cv_roc_auc_mean": 0.7632,
+          "cv_roc_auc_std": 0.0322,
+          "confusion_matrix": [
+            [
+              154,
+              9
+            ],
+            [
+              30,
+              16
+            ]
+          ]
+        },
+        "Random Forest Classifier": {
+          "model_name": "Random Forest Classifier",
+          "accuracy": 0.8134,
+          "precision": 0.7059,
+          "recall": 0.2609,
+          "f1_score": 0.381,
+          "roc_auc": 0.8177,
+          "cv_roc_auc_mean": 0.7988,
+          "cv_roc_auc_std": 0.0328,
+          "confusion_matrix": [
+            [
+              158,
+              5
+            ],
+            [
+              34,
+              12
+            ]
+          ]
+        },
+        "Gradient Boosting Classifier": {
+          "model_name": "Gradient Boosting Classifier",
+          "accuracy": 0.7943,
+          "precision": 0.5484,
+          "recall": 0.3696,
+          "f1_score": 0.4416,
+          "roc_auc": 0.8005,
+          "cv_roc_auc_mean": 0.7775,
+          "cv_roc_auc_std": 0.0282,
+          "confusion_matrix": [
+            [
+              149,
+              14
+            ],
+            [
+              29,
+              17
+            ]
+          ]
+        }
+      },
+      "regression": {
+        "Ridge Regression": {
+          "model_name": "Ridge Regression",
+          "mae": 2.3753,
+          "rmse": 3.3434,
+          "r2": 0.2738
+        },
+        "Random Forest Regressor": {
+          "model_name": "Random Forest Regressor",
+          "mae": 2.3691,
+          "rmse": 3.2426,
+          "r2": 0.3169
+        },
+        "Gradient Boosting Regressor": {
+          "model_name": "Gradient Boosting Regressor",
+          "mae": 2.3788,
+          "rmse": 3.2135,
+          "r2": 0.3291
+        }
+      },
+      "feature_importance": {
+        "failures": 0.1492,
+        "absences": 0.0648,
+        "study_to_social_ratio": 0.0495,
+        "course_code_MAT": 0.0347,
+        "alcohol_index": 0.0344,
+        "course_code_POR": 0.0309,
+        "goout": 0.0305,
+        "parent_edu_avg": 0.0267,
+        "famrel": 0.0266,
+        "age": 0.0257
+      }
+    },
+    "scenario_b": {
+      "scenario_name": "Scenario B \u2014 Mid-Term Evaluation",
+      "description": "Mid-semester prediction after Period 1 exam results (G1) are published.",
+      "features_used": [
+        "school",
+        "sex",
+        "address",
+        "famsize",
+        "Pstatus",
+        "Mjob",
+        "Fjob",
+        "reason",
+        "guardian",
+        "schoolsup",
+        "famsup",
+        "paid",
+        "activities",
+        "nursery",
+        "higher",
+        "internet",
+        "romantic",
+        "course_code",
+        "age",
+        "Medu",
+        "Fedu",
+        "traveltime",
+        "studytime",
+        "failures",
+        "famrel",
+        "freetime",
+        "goout",
+        "Dalc",
+        "Walc",
+        "health",
+        "absences",
+        "parent_edu_avg",
+        "alcohol_index",
+        "study_to_social_ratio",
+        "G1"
+      ],
+      "best_classifier": "Logistic Regression",
+      "best_regressor": "Gradient Boosting Regressor",
+      "classification": {
+        "Logistic Regression": {
+          "model_name": "Logistic Regression",
+          "accuracy": 0.8565,
+          "precision": 0.6818,
+          "recall": 0.6522,
+          "f1_score": 0.6667,
+          "roc_auc": 0.9309,
+          "cv_roc_auc_mean": 0.9302,
+          "cv_roc_auc_std": 0.0142,
+          "confusion_matrix": [
+            [
+              149,
+              14
+            ],
+            [
+              16,
+              30
+            ]
+          ]
+        },
+        "Random Forest Classifier": {
+          "model_name": "Random Forest Classifier",
+          "accuracy": 0.8517,
+          "precision": 0.7778,
+          "recall": 0.4565,
+          "f1_score": 0.5753,
+          "roc_auc": 0.9078,
+          "cv_roc_auc_mean": 0.9177,
+          "cv_roc_auc_std": 0.0228,
+          "confusion_matrix": [
+            [
+              157,
+              6
+            ],
+            [
+              25,
+              21
+            ]
+          ]
+        },
+        "Gradient Boosting Classifier": {
+          "model_name": "Gradient Boosting Classifier",
+          "accuracy": 0.8565,
+          "precision": 0.6538,
+          "recall": 0.7391,
+          "f1_score": 0.6939,
+          "roc_auc": 0.9274,
+          "cv_roc_auc_mean": 0.9339,
+          "cv_roc_auc_std": 0.0181,
+          "confusion_matrix": [
+            [
+              145,
+              18
+            ],
+            [
+              12,
+              34
+            ]
+          ]
+        }
+      },
+      "regression": {
+        "Ridge Regression": {
+          "model_name": "Ridge Regression",
+          "mae": 1.5565,
+          "rmse": 2.1852,
+          "r2": 0.6898
+        },
+        "Random Forest Regressor": {
+          "model_name": "Random Forest Regressor",
+          "mae": 1.4096,
+          "rmse": 1.9762,
+          "r2": 0.7463
+        },
+        "Gradient Boosting Regressor": {
+          "model_name": "Gradient Boosting Regressor",
+          "mae": 1.3358,
+          "rmse": 1.9023,
+          "r2": 0.7649
+        }
+      },
+      "feature_importance": {
+        "G1": 3.1891,
+        "Fjob_health": 0.6633,
+        "course_code_POR": 0.6212,
+        "course_code_MAT": 0.618,
+        "Fjob_other": 0.3962,
+        "school_GP": 0.3937,
+        "school_MS": 0.3905,
+        "Fjob_at_home": 0.3882,
+        "Pstatus_A": 0.3108,
+        "Pstatus_T": 0.3076
+      }
+    },
+    "scenario_c": {
+      "scenario_name": "Scenario C \u2014 Late-Stage Forecasting",
+      "description": "End-of-term final projection after Period 1 and Period 2 exams (G1 & G2) and grade trajectory are published.",
+      "features_used": [
+        "school",
+        "sex",
+        "address",
+        "famsize",
+        "Pstatus",
+        "Mjob",
+        "Fjob",
+        "reason",
+        "guardian",
+        "schoolsup",
+        "famsup",
+        "paid",
+        "activities",
+        "nursery",
+        "higher",
+        "internet",
+        "romantic",
+        "course_code",
+        "age",
+        "Medu",
+        "Fedu",
+        "traveltime",
+        "studytime",
+        "failures",
+        "famrel",
+        "freetime",
+        "goout",
+        "Dalc",
+        "Walc",
+        "health",
+        "absences",
+        "parent_edu_avg",
+        "alcohol_index",
+        "study_to_social_ratio",
+        "G1",
+        "G2",
+        "grade_delta"
+      ],
+      "best_classifier": "Logistic Regression",
+      "best_regressor": "Random Forest Regressor",
+      "classification": {
+        "Logistic Regression": {
+          "model_name": "Logistic Regression",
+          "accuracy": 0.8995,
+          "precision": 0.766,
+          "recall": 0.7826,
+          "f1_score": 0.7742,
+          "roc_auc": 0.9712,
+          "cv_roc_auc_mean": 0.9645,
+          "cv_roc_auc_std": 0.0126,
+          "confusion_matrix": [
+            [
+              152,
+              11
+            ],
+            [
+              10,
+              36
+            ]
+          ]
+        },
+        "Random Forest Classifier": {
+          "model_name": "Random Forest Classifier",
+          "accuracy": 0.9043,
+          "precision": 0.7826,
+          "recall": 0.7826,
+          "f1_score": 0.7826,
+          "roc_auc": 0.9712,
+          "cv_roc_auc_mean": 0.9666,
+          "cv_roc_auc_std": 0.0112,
+          "confusion_matrix": [
+            [
+              153,
+              10
+            ],
+            [
+              10,
+              36
+            ]
+          ]
+        },
+        "Gradient Boosting Classifier": {
+          "model_name": "Gradient Boosting Classifier",
+          "accuracy": 0.8995,
+          "precision": 0.766,
+          "recall": 0.7826,
+          "f1_score": 0.7742,
+          "roc_auc": 0.9679,
+          "cv_roc_auc_mean": 0.9618,
+          "cv_roc_auc_std": 0.0117,
+          "confusion_matrix": [
+            [
+              152,
+              11
+            ],
+            [
+              10,
+              36
+            ]
+          ]
+        }
+      },
+      "regression": {
+        "Ridge Regression": {
+          "model_name": "Ridge Regression",
+          "mae": 0.8285,
+          "rmse": 1.1987,
+          "r2": 0.9066
+        },
+        "Random Forest Regressor": {
+          "model_name": "Random Forest Regressor",
+          "mae": 0.7475,
+          "rmse": 1.0214,
+          "r2": 0.9322
+        },
+        "Gradient Boosting Regressor": {
+          "model_name": "Gradient Boosting Regressor",
+          "mae": 0.7621,
+          "rmse": 1.0804,
+          "r2": 0.9242
+        }
+      },
+      "feature_importance": {
+        "G2": 3.0968,
+        "G1": 2.9003,
+        "grade_delta": 0.8191,
+        "Fjob_health": 0.6546,
+        "Fjob_at_home": 0.5229,
+        "Mjob_health": 0.5033,
+        "course_code_MAT": 0.5006,
+        "course_code_POR": 0.5003,
+        "school_MS": 0.4887,
+        "school_GP": 0.4884
+      }
+    }
+  },
+  "best_classifier": "Logistic Regression",
+  "best_regressor": "Random Forest Regressor",
+  "classification_metrics": {
+    "Logistic Regression": {
+      "model_name": "Logistic Regression",
+      "accuracy": 0.8995,
+      "precision": 0.766,
+      "recall": 0.7826,
+      "f1_score": 0.7742,
+      "roc_auc": 0.9712,
+      "cv_roc_auc_mean": 0.9645,
+      "cv_roc_auc_std": 0.0126,
+      "confusion_matrix": [
+        [
+          152,
+          11
+        ],
+        [
+          10,
+          36
+        ]
+      ]
+    },
+    "Random Forest Classifier": {
+      "model_name": "Random Forest Classifier",
+      "accuracy": 0.9043,
+      "precision": 0.7826,
+      "recall": 0.7826,
+      "f1_score": 0.7826,
+      "roc_auc": 0.9712,
+      "cv_roc_auc_mean": 0.9666,
+      "cv_roc_auc_std": 0.0112,
+      "confusion_matrix": [
+        [
+          153,
+          10
+        ],
+        [
+          10,
+          36
+        ]
+      ]
+    },
+    "Gradient Boosting Classifier": {
+      "model_name": "Gradient Boosting Classifier",
+      "accuracy": 0.8995,
+      "precision": 0.766,
+      "recall": 0.7826,
+      "f1_score": 0.7742,
+      "roc_auc": 0.9679,
+      "cv_roc_auc_mean": 0.9618,
+      "cv_roc_auc_std": 0.0117,
+      "confusion_matrix": [
+        [
+          152,
+          11
+        ],
+        [
+          10,
+          36
+        ]
+      ]
+    }
+  },
+  "regression_metrics": {
+    "Ridge Regression": {
+      "model_name": "Ridge Regression",
+      "mae": 0.8285,
+      "rmse": 1.1987,
+      "r2": 0.9066
+    },
+    "Random Forest Regressor": {
+      "model_name": "Random Forest Regressor",
+      "mae": 0.7475,
+      "rmse": 1.0214,
+      "r2": 0.9322
+    },
+    "Gradient Boosting Regressor": {
+      "model_name": "Gradient Boosting Regressor",
+      "mae": 0.7621,
+      "rmse": 1.0804,
+      "r2": 0.9242
+    }
+  },
+  "feature_importance": {
+    "G2": 3.0968,
+    "G1": 2.9003,
+    "grade_delta": 0.8191,
+    "Fjob_health": 0.6546,
+    "Fjob_at_home": 0.5229,
+    "Mjob_health": 0.5033,
+    "course_code_MAT": 0.5006,
+    "course_code_POR": 0.5003,
+    "school_MS": 0.4887,
+    "school_GP": 0.4884
+  },
+  "train_samples": 835,
+  "test_samples": 208
+}

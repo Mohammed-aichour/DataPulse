@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-10-23T13:33:46.720950+00:00",
+  "dataset_name": "Portuguese Language",
+  "total_records": 649,
+  "total_columns": 33,
+  "missing_values_count": 0,
+  "missing_values_by_column": {},
+  "duplicate_rows_count": 0,
+  "schema_conformance_rate": 100.0,
+  "outlier_count_by_column": {
+    "age": 1,
+    "absences": 21,
+    "G1": 16,
+    "G2": 25,
+    "G3": 16
+  },
+  "target_stats": {
+    "mean": 11.906009244992296,
+    "std": 3.230656242804805,
+    "min": 0.0,
+    "median": 12.0,
+    "max": 19.0,
+    "pass_rate_pct": 84.59167950693374,
+    "zero_scores_count": 15
+  },
+  "quality_pillars": {
+    "completeness": 100.0,
+    "schema_validity": 100.0,
+    "key_integrity": 75.0,
+    "outlier_regularity": 93.9,
+    "granularity_authenticity": 80.0
+  },
+  "quality_score": 91.1,
+  "status": "PASSED",
+  "methodology_notes": [
+    "Completeness: 100% (Zero missing cells detected in raw ingestion).",
+    "Schema Validity: 100% (All 33 categorical and numeric bounds adhere to Pydantic v2 domain specifications).",
+    "Key Integrity: 75% (Raw dataset lacks verified student surrogate keys; cross-course linkage is heuristic).",
+    "Outlier Regularity: 93.9% (Penalized for 21 extreme absence records up to 93 days and 15 dropout zero-scores).",
+    "Granularity: 80% (School absences are provided as cumulative term integer counts rather than daily swipe check-in records)."
+  ]
+}
