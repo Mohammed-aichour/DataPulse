@@ -173,6 +173,7 @@ class PredictionRequest(BaseModel):
 
 
 class PredictionResponse(BaseModel):
+    scenario: Optional[str] = None
     predicted_grade_g3: float
     is_at_risk: bool
     risk_probability: float

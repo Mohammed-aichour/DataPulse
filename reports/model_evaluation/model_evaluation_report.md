@@ -1,6 +1,6 @@
 # DataPulse — Multi-Scenario Machine Learning Evaluation Report
 
-- **Trained At**: `2026-10-23T13:33:58.271143+00:00`
+- **Trained At**: `2026-10-23T20:17:19.250242+00:00`
 - **Methodological Architecture**: `3-Horizon Multi-Scenario Anti-Leakage Framework`
 - **Dataset Split**: 835 Training records / 208 Unseen Test records (80/20 Stratified)
 

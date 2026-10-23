@@ -233,6 +233,7 @@ class PredictorService:
         }
 
         result = {
+            "scenario": active_scenario,
             "predicted_grade_g3": pred_grade,
             "is_at_risk": bool(pred_risk_bin == 1),
             "risk_probability": round(risk_probability, 3),

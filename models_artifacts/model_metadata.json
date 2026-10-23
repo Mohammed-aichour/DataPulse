@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-10-23T13:33:58.271143+00:00",
+  "trained_at": "2026-10-23T20:17:19.250242+00:00",
   "framework": "3-Horizon Multi-Scenario Anti-Leakage Framework",
   "active_default_scenario": "scenario_c",
   "scenarios": {

@@ -18,10 +18,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Copy source code, data, database, models
+# Copy application packages and assets
+COPY __init__.py /app/__init__.py
 COPY backend /app/backend
 COPY src /app/src
+COPY etl /app/etl
+COPY ml /app/ml
 COPY database /app/database
+COPY scripts /app/scripts
 COPY data /app/data
 COPY models_artifacts /app/models_artifacts
 COPY reports /app/reports
