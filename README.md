@@ -127,7 +127,61 @@ To eliminate target leakage, DataPulse trains and benchmarks models across three
 
 ---
 
-## 6. Quickstart Guide (Local Execution)
+## 6. Project Architecture & Repository Layout
+
+```text
+DataPulse/
+├── backend/
+│   ├── app/
+│   │   ├── api/            # REST API route handlers (analytics, export, health, ml, pipeline, students)
+│   │   ├── core/           # Configuration, settings & security (Pydantic Settings)
+│   │   ├── schemas/        # Pydantic v2 request & response contracts
+│   │   └── main.py         # FastAPI application entrypoint with CORS & lifespan
+│   ├── tests/              # Backend endpoint integration tests
+│   ├── requirements.txt    # Production Python dependencies
+│   └── Dockerfile          # Backend container specification
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # UI widgets, Navbar, Sidebar
+│   │   ├── pages/          # Dashboard, Analytics, Students, ML (3-Horizon), Data Mgmt, Settings
+│   │   ├── services/       # Centralized API HTTP client (Axios/fetch with base URL env)
+│   │   └── types/          # TypeScript interface contracts
+│   ├── nginx.conf          # Production web server configuration
+│   ├── package.json        # Frontend dependencies (React 19, Vite, Tailwind CSS, Recharts)
+│   └── Dockerfile          # Multi-stage frontend container build
+├── data/
+│   ├── raw/                # Authenticated UCI datasets (student-mat.csv, student-por.csv)
+│   ├── processed/          # Clean 3NF CSV files (students.csv, academic_records.csv, courses.csv)
+│   └── README.md           # Dataset provenance & CC-BY-4.0 license documentation
+├── etl/
+│   ├── __init__.py         # Package root
+│   └── run.py              # Dedicated ETL runner (python -m etl.run)
+├── ml/
+│   ├── __init__.py         # Package root
+│   ├── train.py            # Dedicated 3-Horizon ML trainer (python -m ml.train)
+│   └── evaluate.py         # Dedicated ML evaluation & benchmark runner (python -m ml.evaluate)
+├── database/
+│   ├── migrations/         # Alembic database migration scripts & versions
+│   ├── sql/                # Analytical SQL views (v_student_overview, v_course_perf, v_absence_impact)
+│   ├── connection.py       # SQLAlchemy engine (PostgreSQL primary with SQLite fallback)
+│   └── models.py           # 3NF ORM entities (Student, Course, AcademicRecord, etc.)
+├── scripts/
+│   ├── init_db.py          # Database initialization & SQL view compilation
+│   ├── seed_db.py          # Idempotent development & demo data seeder
+│   └── verify_system.py    # End-to-end smoke test & system health verifier
+├── docs/                   # Full technical specifications (api.md, architecture.md, database.md, deployment.md)
+├── models_artifacts/       # Serialized models (.joblib) and model_metadata.json
+├── reports/                # Data quality and ML evaluation JSON/Markdown reports
+├── docker-compose.yml      # Multi-container orchestration (PostgreSQL 16, Backend, Frontend)
+├── pyproject.toml          # Standard packaging & pytest configuration
+├── setup.py                # Setuptools editable installation support
+├── .env.example            # Environment variables template
+└── README.md
+```
+
+---
+
+## 7. Quickstart Guide (Local Execution)
 
 ### Prerequisites
 - Python 3.11+
@@ -145,78 +199,105 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r backend/requirements.txt
+pip install -e .
 ```
 
-### Step 2: Execute Master Pipeline (ETL & ML Training)
+### Step 2: Database Initialization & Seeding
 ```bash
-python -m src.pipeline.run
+# Initialize schema and compile analytical SQL views
+python scripts/init_db.py
+
+# Run dedicated ETL pipeline (Extract -> Validate -> Transform -> Load)
+python -m etl.run
+
+# Or seed database idempotently
+python scripts/seed_db.py
 ```
 
-### Step 3: Run Automated Pytest Suite
+### Step 3: Machine Learning Training & Evaluation
 ```bash
-pytest tests/test_pipeline_and_api.py -v
-```
-*(All 17 tests pass with 100% success rate)*
+# Train the 3-Horizon anti-leakage models (Scenarios A, B, C)
+python -m ml.train
 
-### Step 4: Start FastAPI Backend (Port 8000)
+# Benchmark models against naive baselines with full metrics table
+python -m ml.evaluate
+```
+
+### Step 4: Run Automated Verification & Pytest Suite
+```bash
+# Run end-to-end system smoke test
+python scripts/verify_system.py
+
+# Execute full pytest suite (23 integration and API tests)
+pytest -v
+```
+
+### Step 5: Start FastAPI Backend (Port 8000)
 ```bash
 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 *Interactive Swagger Documentation: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)*
 
-### Step 5: Start React Frontend (Port 3000)
+### Step 6: Start React Frontend (Port 3000)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*Web Application: [http://localhost:3000](http://localhost:3000)*
+*Web Application: [http://localhost:5173](http://localhost:5173) (or configured port)*
 
 ---
 
-## 7. Docker Compose (Full Stack with PostgreSQL)
+## 8. Docker Compose (Full Stack with PostgreSQL 16)
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
-- **PostgreSQL 16**: Port `5432` with volume `postgres_data`
-- **FastAPI Backend**: Port `8000`
+- **PostgreSQL 16**: Port `5432` with persistent volume `postgres_data`
+- **FastAPI Backend**: Port `8000` (auto-runs pipeline check & schema migration on startup)
 - **React Frontend (Nginx)**: Port `3000`
 
 ---
 
-## 8. Automated Testing & Verification Summary
+## 9. Automated Testing & Verification Summary
 
-```
-tests/test_pipeline_and_api.py::test_dataset_authenticity_and_hashes PASSED [  5%]
-tests/test_pipeline_and_api.py::test_multi_pillar_data_quality_framework PASSED [ 11%]
-tests/test_pipeline_and_api.py::test_entity_linkage_zero_intra_course_duplicates PASSED [ 17%]
-tests/test_pipeline_and_api.py::test_database_idempotency PASSED         [ 23%]
-tests/test_pipeline_and_api.py::test_ml_three_horizon_scenarios PASSED   [ 29%]
-tests/test_pipeline_and_api.py::test_api_health PASSED                   [ 35%]
-tests/test_pipeline_and_api.py::test_api_info PASSED                     [ 41%]
-tests/test_pipeline_and_api.py::test_api_analytics_overview PASSED       [ 47%]
-tests/test_pipeline_and_api.py::test_api_analytics_courses PASSED        [ 52%]
-tests/test_pipeline_and_api.py::test_api_analytics_distribution PASSED   [ 58%]
-tests/test_pipeline_and_api.py::test_api_analytics_performance_factors PASSED [ 64%]
-tests/test_pipeline_and_api.py::test_api_analytics_correlations PASSED   [ 70%]
-tests/test_pipeline_and_api.py::test_api_students_list_and_filter PASSED [ 76%]
-tests/test_pipeline_and_api.py::test_api_student_detail PASSED           [ 82%]
-tests/test_pipeline_and_api.py::test_api_ml_evaluation_and_predict PASSED [ 88%]
-tests/test_pipeline_and_api.py::test_api_export_csv PASSED               [ 94%]
-tests/test_pipeline_and_api.py::test_api_powerbi_spec PASSED             [100%]
-======================= 17 passed in 4.52s =======================
+Full Pytest suite execution:
+```text
+tests/test_pipeline_and_api.py::test_dataset_authenticity_and_hashes PASSED [  4%]
+tests/test_pipeline_and_api.py::test_multi_pillar_data_quality_framework PASSED [  8%]
+tests/test_pipeline_and_api.py::test_entity_linkage_zero_intra_course_duplicates PASSED [ 13%]
+tests/test_pipeline_and_api.py::test_database_idempotency PASSED         [ 17%]
+tests/test_pipeline_and_api.py::test_ml_three_horizon_scenarios PASSED   [ 21%]
+tests/test_pipeline_and_api.py::test_api_health PASSED                   [ 26%]
+tests/test_pipeline_and_api.py::test_api_info PASSED                     [ 30%]
+tests/test_pipeline_and_api.py::test_api_analytics_overview PASSED       [ 34%]
+tests/test_pipeline_and_api.py::test_api_analytics_courses PASSED        [ 39%]
+tests/test_pipeline_and_api.py::test_api_analytics_distribution PASSED   [ 43%]
+tests/test_pipeline_and_api.py::test_api_analytics_performance_factors PASSED [ 47%]
+tests/test_pipeline_and_api.py::test_api_analytics_correlations PASSED   [ 52%]
+tests/test_pipeline_and_api.py::test_api_students_list_and_filter PASSED [ 56%]
+tests/test_pipeline_and_api.py::test_api_student_detail PASSED           [ 60%]
+tests/test_pipeline_and_api.py::test_api_ml_evaluation_and_predict PASSED [ 65%]
+tests/test_pipeline_and_api.py::test_api_export_csv PASSED               [ 69%]
+tests/test_pipeline_and_api.py::test_api_powerbi_spec PASSED             [ 73%]
+backend/tests/test_api_endpoints.py::test_health_check PASSED            [ 78%]
+backend/tests/test_api_endpoints.py::test_system_info PASSED             [ 82%]
+backend/tests/test_api_endpoints.py::test_analytics_overview PASSED      [ 86%]
+backend/tests/test_api_endpoints.py::test_students_pagination PASSED     [ 91%]
+backend/tests/test_api_endpoints.py::test_predict_scenario_a PASSED      [ 95%]
+backend/tests/test_api_endpoints.py::test_predict_scenario_c PASSED      [100%]
+======================= 23 passed in 4.99s (100% pass rate) =======================
 ```
 
-Frontend production build:
-```
+Frontend production build verification:
+```text
 ✓ 2522 modules transformed.
-✓ built in 415ms (0 TypeScript errors)
+✓ built in 402ms (0 TypeScript errors)
 ```
 
 ---
 
-## 9. Author & Institutional Attribution
+## 10. Author & Institutional Attribution
 
 - **Author**: Mohamed
 - **Role**: 2nd-Year Computer Engineering Student
