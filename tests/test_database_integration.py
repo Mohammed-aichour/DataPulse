@@ -32,24 +32,43 @@ from src.pipeline.db_loader import DatabaseLoader
 
 @pytest.fixture(scope="module")
 def temp_db():
-    """Provides a fresh isolated database file for integration testing."""
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db_path = tmp.name
+    """Provides an isolated database engine for integration testing.
+    Supports PostgreSQL if TEST_DATABASE_URL is set in environment;
+    otherwise defaults to an isolated temporary SQLite file.
+    """
+    test_db_url = os.getenv("TEST_DATABASE_URL")
+    is_postgres = bool(test_db_url and ("postgres" in test_db_url.lower()))
 
-    db_url = f"sqlite:///{db_path}"
-    test_engine = create_engine(db_url, connect_args={"check_same_thread": False})
+    if is_postgres:
+        db_path = None
+        db_url = test_db_url
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
+            db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        test_engine = create_engine(db_url, pool_pre_ping=True)
+    else:
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+            db_path = tmp.name
+        db_url = f"sqlite:///{db_path}"
+        test_engine = create_engine(db_url, connect_args={"check_same_thread": False})
+
     TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
     yield {
         "path": db_path,
         "url": db_url,
         "engine": test_engine,
-        "sessionmaker": TestSession
+        "sessionmaker": TestSession,
+        "dialect": test_engine.dialect.name
     }
 
     test_engine.dispose()
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    if db_path and os.path.exists(db_path):
+        try:
+            os.remove(db_path)
+        except OSError:
+            pass
 
 
 def test_alembic_clean_schema_migration(temp_db):

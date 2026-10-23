@@ -13,13 +13,19 @@
 
 ---
 
-## 2. Dataset Structure
+## 2. Dataset Structure & Entity Linkage Modeling
 
 The raw dataset consists of two CSV files with semicolon (`;`) delimiters:
 - `student-mat.csv`: 395 student enrollment records in Secondary School Mathematics.
 - `student-por.csv`: 649 student enrollment records in Secondary School Portuguese Language.
 - **Total Course Records**: 1,044 enrollments.
-- **Unique Physical Students**: 662 students identified across both courses using the 13 unique demographic/family linkage attributes (`school`, `sex`, `age`, `address`, `famsize`, `Pstatus`, `Medu`, `Fedu`, `Mjob`, `Fjob`, `reason`, `nursery`, `internet`). 382 students are enrolled in both courses.
+
+### Cross-Course Entity Linkage Assumption & Limitations:
+- **No Ground-Truth Student IDs**: The raw UCI benchmark datasets do not contain authoritative institutional student IDs, matriculation numbers, or civil identifiers.
+- **Cortez & Silva (2008) Heuristic**: The original authors used 13 demographic and family variables (`school`, `sex`, `age`, `address`, `famsize`, `Pstatus`, `Medu`, `Fedu`, `Mjob`, `Fjob`, `reason`, `nursery`, `internet`) to link students across both subjects, reporting 382 overlapping records.
+- **Intra-Course Demographic Collisions**: Our data engineering audit revealed that these 13 attributes do not constitute a unique natural key within individual classes. Specifically, 4 pairs of students in Mathematics and 12 pairs in Portuguese share identical demographic vectors while recording different grades, study times, and absences.
+- **DataPulse Occurrence-Ranked Linkage**: To eliminate cartesian product inflation and ensure zero intra-course collisions, DataPulse applies a 1-to-1 occurrence-ranked linkage heuristic (`cumcount()`), resolving the dataset into **674 derived student keys** (`STU-0001` to `STU-0674`), with 370 dual-enrolled records.
+- **Critical Data Integrity Note**: These 674 entities are **derived modeling constructs based on demographic matching and occurrence ordering**. They must **not** be interpreted as 674 independently verified real-world human identities. If two demographically identical students took different courses or both courses, heuristic attribution cannot be verified without institutional ground-truth keys.
 
 ---
 

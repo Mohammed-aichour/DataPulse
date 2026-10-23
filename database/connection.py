@@ -5,11 +5,14 @@ Configures robust connection pooling, pre-ping health validation, and transactio
 """
 
 import os
+import logging
 from pathlib import Path
 from typing import Generator
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
+
+logger = logging.getLogger("datapulse.database")
 
 # Load environment variables from .env file if available
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +36,19 @@ if is_sqlite:
     p = Path(raw_path)
     if not p.is_absolute():
         DATABASE_URL = f"sqlite:///{(BASE_DIR / p).resolve()}"
+else:
+    # Check for weak or placeholder passwords in PostgreSQL connection string
+    WEAK_PASSWORDS = {
+        "datapulse_secure_password", "postgres", "password", "123456",
+        "admin", "replace_with_strong_password", "your_strong_local_postgres_password_here"
+    }
+    for weak in WEAK_PASSWORDS:
+        if f":{weak}@" in DATABASE_URL:
+            logger.warning(
+                "[SECURITY WARNING] DATABASE_URL contains a default/placeholder password (%s). "
+                "Require a strong local secret in .env before running production deployments.", weak
+            )
+            break
 
 engine_kwargs = {
     "pool_pre_ping": True,

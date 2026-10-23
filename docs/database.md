@@ -120,14 +120,21 @@ erDiagram
 
 | Table Name | Primary Key | Foreign Keys | Unique Constraints | Primary Indexes | Purpose |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `students` | `id` (SERIAL / INTEGER) | None | `student_id` | `ix_students_student_id` | Physical student demographic entity registry (674 resolved individuals). |
+| `students` | `id` (SERIAL / INTEGER) | None | `student_id` | `ix_students_student_id` | Student demographic entity registry (674 derived cross-course student keys based on demographic matching and occurrence ordering). |
 | `courses` | `id` (SERIAL / INTEGER) | None | `course_code` | `ix_courses_course_code` | Academic catalog registry (`MAT`, `POR`). |
 | `academic_records` | `id` (SERIAL / INTEGER) | `student_id` $\rightarrow$ `students.student_id`<br>`course_id` $\rightarrow$ `courses.id` | `record_id`<br>`uq_student_course (student_id, course_id)` | `ix_academic_records_record_id`<br>`ix_academic_records_student_id`<br>`ix_academic_records_course_id`<br>`ix_academic_records_academic_risk`<br>`ix_student_course` | Individual course enrollments (1,044 records) with academic marks and engineered risk factors. |
 | `pipeline_executions` | `id` (SERIAL / INTEGER) | None | None | `ix_pipeline_executions_run_timestamp` | Audit log for ETL execution cycles, durations, and multi-pillar quality scores. |
 | `prediction_logs` | `id` (SERIAL / INTEGER) | None | None | `ix_prediction_logs_timestamp` | In-flight telemetry for inference requests, tracking model inputs and drift. |
 | `data_imports` | `id` (SERIAL / INTEGER) | None | None | `ix_data_imports_source_name` | Provenance tracking for raw dataset ingestion and SHA-256 verification. |
 
-### 2.2 Relational Integrity & The Unique Enrollment Constraint
+### 2.2 Cross-Course Entity Linkage Assumption & Limitations
+
+The student entities stored in the `students` table (`STU-0001` through `STU-0674`) were derived by joining the Mathematics (`395` rows) and Portuguese (`649` rows) files using demographic matching and occurrence ordering (`cumcount()`):
+- **Absence of Ground-Truth Identifiers**: The raw benchmark dataset from the UCI Machine Learning Repository does not contain authoritative student IDs or civil registration numbers.
+- **Linkage Heuristic**: 13 demographic variables (`school`, `sex`, `age`, `address`, `famsize`, `Pstatus`, `Medu`, `Fedu`, `Mjob`, `Fjob`, `reason`, `nursery`, `internet`) were matched across courses. Because 16 pairs of students share identical demographic profiles within the same class, an occurrence-ranked linkage assumption was applied to eliminate cartesian product expansion.
+- **Data Integrity Reality**: These 674 records represent **derived cross-course entity keys under the stated linkage assumptions**, NOT 674 independently verified physical human identities. True individual identity cannot be established without administrative institutional data.
+
+### 2.3 Relational Integrity & The Unique Enrollment Constraint
 
 To guarantee that a student cannot be inadvertently enrolled multiple times in the same course, `academic_records` enforces a strict compound unique constraint:
 
@@ -445,9 +452,12 @@ sqlite3 datapulse.db ".backup 'datapulse_backup_$(date +%Y%m%d_%H%M%S).db'"
 
 ---
 
-## 8. Managed Cloud Database Deployment
+## 8. Managed Cloud Database Architecture & Configuration Guide
 
-For production deployments, DataPulse is verified for compatibility with leading managed PostgreSQL providers:
+DataPulse is architected for PostgreSQL wire compatibility with leading managed PostgreSQL providers. 
+
+> [!NOTE]
+> The configurations below are architectural reference specifications. DataPulse has not been provisioned on live cloud infrastructure; no zero-downtime deployment properties are claimed without active multi-region cluster testing.
 
 ### 8.1 Recommended Cloud Providers
 

@@ -1,22 +1,29 @@
-# DataPulse — Production Deployment Guide
+# DataPulse — Production Deployment Architecture & Reference Guide
 
-DataPulse is built for cloud and containerized production environments.
+This document details the multi-container Docker Compose configuration and cloud deployment reference architectures for DataPulse.
+
+> [!NOTE]
+> The cloud specifications detailed below represent deployment blueprints and configuration templates. Live remote cloud deployment has not been executed; zero-downtime deployment properties are not claimed without active multi-zone load balancing verification.
 
 ---
 
 ## 1. Local Container Deployment (Docker Compose)
 
-The easiest way to run the full production stack locally with PostgreSQL, FastAPI backend, and React Nginx frontend:
+The full production stack runs PostgreSQL 16, the FastAPI backend, and the React Nginx frontend:
 
 ```bash
 cd DataPulse
-docker compose up --build
+# Ensure .env is populated with secure secrets (POSTGRES_PASSWORD, JWT_SECRET)
+docker compose up --build -d
 ```
 
 ### Services Started:
-- **PostgreSQL 16**: Port `5432` with persistent data volume `postgres_data`.
-- **FastAPI Backend**: Port `8000` (auto-initializes schema, runs pipeline, and serves REST API).
-- **React Frontend (Nginx)**: Port `3000` (serves compiled static assets and proxies `/api/` to backend).
+- **PostgreSQL 16**: Bound strictly to `127.0.0.1:5432:5432` with persistent data volume `postgres_data` and healthcheck.
+- **FastAPI Backend**: Bound to `127.0.0.1:8000:8000` (auto-executes Alembic migrations, ETL integrity check, and serves REST API).
+- **React Frontend (Nginx)**: Bound to `127.0.0.1:3000:80` (serves compiled static assets and reverse proxies `/api/` to backend).
+
+> [!IMPORTANT]
+> **Host Environment Status**: Docker execution on this specific Windows host machine is marked **NOT TESTED** because the Docker CLI is not installed in the Windows environment (`docker: The term 'docker' is not recognized`). All Dockerfiles, compose files, and container startup scripts are fully authored and syntactically verified.
 
 ---
 

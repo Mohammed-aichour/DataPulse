@@ -4,10 +4,12 @@ Loads settings using Pydantic Settings with support for environment variables.
 """
 
 import os
+import logging
 from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+logger = logging.getLogger("datapulse.config")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
@@ -40,5 +42,14 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    def validate_security(self):
+        """Warns if sensitive secrets are left with default or weak placeholders."""
+        if self.JWT_SECRET in {"datapulse-production-secret-key-uia-agadir-2026", "YOUR_CRYPTOGRAPHICALLY_SECURE_RANDOM_SECRET_KEY_HERE"}:
+            logger.warning(
+                "[SECURITY WARNING] JWT_SECRET is using a default or placeholder value. "
+                "Set a unique 256-bit cryptographically secure token in your .env file."
+            )
+
 
 settings = Settings()
+settings.validate_security()

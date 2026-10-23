@@ -80,16 +80,17 @@ flowchart TD
   - `student-por.csv`: 649 records (SHA-256: `a7594a11d777...`) — `is_synthetic: False`.
   - Total Verified Enrollments: **1,044 records**.
 
-### Critical Entity Linkage Discovery:
+### Entity Linkage Modeling, Linkage Assumptions & Limitations:
 Cortez & Silva (2008) provided an R script (`student-merge.R`) matching students on 13 demographic attributes, reporting 382 common students. 
 During our data engineering audit, we discovered that **demographic attributes do not form a unique natural key within classes**:
 - 4 pairs of students in Mathematics and 12 pairs in Portuguese share identical demographic traits while having different grades, guardians, and study times.
 - Naive SQL/Pandas merging on those 13 attributes causes cartesian product expansion, falsely collapsing distinct students into duplicate enrollments within the same course.
-- **DataPulse Solution**: Implemented **1-to-1 occurrence-ranked linkage (`cumcount()`)**, verifying that:
-  - **370 students** are legitimately enrolled in both Mathematics and Portuguese.
-  - **25 students** are enrolled exclusively in Mathematics.
-  - **279 students** are enrolled exclusively in Portuguese.
-  - **Total unique physical individuals: exactly 674 students**, with **zero intra-course collisions**.
+- **DataPulse Solution**: Implemented **1-to-1 occurrence-ranked linkage (`cumcount()`)**, deriving:
+  - **370 students** linked across both Mathematics and Portuguese.
+  - **25 students** linked exclusively in Mathematics.
+  - **279 students** linked exclusively in Portuguese.
+  - **Total derived cross-course student keys: 674 entities** (`STU-0001` to `STU-0674`), with **zero intra-course collisions**.
+- **Important Data Integrity & Assumption Note**: These 674 student keys are an **engineered modeling heuristic** derived via demographic matching and occurrence ordering across the two course datasets. Because the raw UCI repository does not contain authoritative student IDs or civil records, these keys represent **derived analytical entities under the stated linkage assumptions**, NOT 674 independently verified real-world human identities. If two distinct individuals share identical demographics, this heuristic cannot separate them without administrative ground-truth data.
 
 ---
 
@@ -251,20 +252,63 @@ npm run dev
 
 ---
 
-## 8. Docker Compose (Full Stack with PostgreSQL 16)
+## 8. Docker Compose & PostgreSQL 16 (Multi-Container Architecture)
 
 ```bash
 docker compose up --build -d
 ```
-- **PostgreSQL 16**: Port `127.0.0.1:5432` with persistent volume `postgres_data` and healthcheck
-- **FastAPI Backend**: Port `8000` (auto-runs Alembic migrations, ETL pipeline check, and serves REST API)
-- **React Frontend (Nginx)**: Port `3000`
+- **PostgreSQL 16**: Port `127.0.0.1:5432` with persistent volume `postgres_data` and automated healthcheck.
+- **FastAPI Backend**: Port `127.0.0.1:8000` (auto-runs Alembic migrations, ETL pipeline check, and serves REST API).
+- **React Frontend (Nginx)**: Port `127.0.0.1:3000` (serves production build with reverse proxy).
+
+> [!IMPORTANT]
+> **Host Environment Status**: Docker Compose execution on this specific Windows host machine is classified as **NOT TESTED** because the Docker CLI is not installed in the Windows environment (`docker: The term 'docker' is not recognized`). 
+> All Dockerfiles, compose specifications, environment variable bindings, and migration scripts are fully authored and syntactically verified.
+
+### How to Run and Verify PostgreSQL with Docker:
+```bash
+# 1. Create .env with strong secrets
+cp .env.example .env
+# Edit .env and set secure POSTGRES_PASSWORD and JWT_SECRET
+
+# 2. Build and start containers
+docker compose up --build -d
+
+# 3. Check container health
+docker compose ps
+
+# 4. Verify live health endpoint
+curl http://127.0.0.1:8000/api/health
+
+# 5. Run the test suite against PostgreSQL inside the container
+docker compose exec backend pytest -v
+```
+
+### How to Test Against Local/Remote PostgreSQL (Without Docker):
+```bash
+# Set PostgreSQL connection in .env or environment
+export DATABASE_URL="postgresql+psycopg2://datapulse_user:YOUR_STRONG_PASSWORD@127.0.0.1:5432/datapulse_db"
+export TEST_DATABASE_URL="postgresql+psycopg2://datapulse_user:YOUR_STRONG_PASSWORD@127.0.0.1:5432/datapulse_db"
+
+# Apply Alembic migrations to PostgreSQL
+alembic upgrade head
+
+# Ingest dataset idempotently into PostgreSQL
+python -m etl.run
+
+# Execute test suite against PostgreSQL
+pytest -v
+```
 
 ---
 
 ## 9. Automated Testing & Verification Summary
 
-Full Pytest suite execution across all 29 integration and API tests:
+### Database Engine Context:
+- **Default Local & CI Test Suite Engine**: **SQLite** (all 29 unit, integration, and API tests run against SQLite with 100% pass rate in 8.45s).
+- **PostgreSQL Integration Capability**: The integration suite dynamically targets PostgreSQL whenever `TEST_DATABASE_URL` is set to a PostgreSQL connection URI.
+
+Full Pytest suite execution across all 29 tests:
 ```text
 tests/test_database_integration.py::test_alembic_clean_schema_migration PASSED [  3%]
 tests/test_database_integration.py::test_views_compilation_and_querying PASSED [  6%]
@@ -295,18 +339,30 @@ backend/tests/test_api_endpoints.py::test_analytics_overview PASSED      [ 89%]
 backend/tests/test_api_endpoints.py::test_students_pagination PASSED     [ 93%]
 backend/tests/test_api_endpoints.py::test_predict_scenario_a PASSED      [ 96%]
 backend/tests/test_api_endpoints.py::test_predict_scenario_c PASSED      [100%]
-======================= 29 passed in 9.45s (100% pass rate) =======================
+======================= 29 passed in 8.45s (100% pass rate) =======================
 ```
 
 Frontend production build verification:
 ```text
 ✓ 2522 modules transformed.
-✓ built in 402ms (0 TypeScript errors)
+✓ built in 728ms (0 TypeScript errors)
 ```
 
 ---
 
-## 10. Author & Institutional Attribution
+## 10. Cloud Deployment Readiness & Architectural Guide
+
+DataPulse is architected for cloud native container environments (e.g. Render, Railway, AWS ECS, or Fly.io) paired with managed PostgreSQL (Supabase, Neon, AWS RDS):
+- **Configuration**: Managed strictly via standard 12-factor environment variables (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`).
+- **Connection Security**: Enforces TLS (`sslmode=require`) on managed cloud database endpoints.
+- **Reference Guide**: Full deployment topology and instructions are documented in [docs/deployment.md](docs/deployment.md).
+
+> [!NOTE]
+> **Deployment Scope**: The cloud deployment guidelines provided are reference specifications. Live cloud deployment was not executed on remote hosted infrastructure in this local environment; zero-downtime deployment properties are not claimed without live multi-zone cluster verification.
+
+---
+
+## 11. Author & Institutional Attribution
 
 - **Author**: Mohamed
 - **Role**: 2nd-Year Computer Engineering Student
