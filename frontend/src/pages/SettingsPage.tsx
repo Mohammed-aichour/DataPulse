@@ -11,7 +11,7 @@ import {
   Sparkles,
   RefreshCw,
 } from "lucide-react";
-import { api } from "../services/api";
+import { api, API_BASE_URL } from "../services/api";
 import { HealthInfo } from "../types";
 
 export const SettingsPage: React.FC = () => {
@@ -165,7 +165,7 @@ export const SettingsPage: React.FC = () => {
         </h2>
         <div className="flex flex-wrap gap-3 pt-1">
           <a
-            href="http://localhost:8000/api/docs"
+            href={`${API_BASE_URL}/docs`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold border border-indigo-200 transition-colors"
@@ -174,7 +174,7 @@ export const SettingsPage: React.FC = () => {
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
           <a
-            href="http://localhost:8000/api/redoc"
+            href={`${API_BASE_URL}/redoc`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 text-slate-700 hover:bg-slate-100 text-xs font-semibold border border-slate-200 transition-colors"
@@ -183,7 +183,7 @@ export const SettingsPage: React.FC = () => {
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
           <a
-            href="http://localhost:8000/api/export/powerbi-spec"
+            href={`${API_BASE_URL}/export/powerbi-spec`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 text-slate-700 hover:bg-slate-100 text-xs font-semibold border border-slate-200 transition-colors"

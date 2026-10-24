@@ -1,5 +1,6 @@
 import React from "react";
 import { Menu, BookOpen, Sparkles, ExternalLink } from "lucide-react";
+import { API_BASE_URL } from "../services/api";
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -31,7 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
 
       <div className="flex items-center gap-3">
         <a
-          href="http://localhost:8000/api/docs"
+          href={`${API_BASE_URL}/docs`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"

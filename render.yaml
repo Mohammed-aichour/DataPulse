@@ -1,0 +1,30 @@
+# Render Infrastructure-as-Code Blueprint for DataPulse
+# Deploys Managed PostgreSQL 16 + FastAPI Web Service with automated migrations and ETL
+services:
+  - type: web
+    name: datapulse-backend
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt && pip install -e . && alembic upgrade head && python scripts/init_db.py && python -m etl.run
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: datapulse-db
+          property: connectionString
+      - key: DEBUG
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+
+databases:
+  - name: datapulse-db
+    databaseName: datapulse
+    user: datapulse_user
+    region: frankfurt
+    plan: free
+    postgresMajorVersion: "16"

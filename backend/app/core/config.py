@@ -4,9 +4,11 @@ Loads settings using Pydantic Settings with support for environment variables.
 """
 
 import os
+import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger("datapulse.config")
@@ -31,6 +33,21 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://localhost:80",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed if item]
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     JWT_SECRET: str = os.getenv("JWT_SECRET", "datapulse-production-secret-key-uia-agadir-2026")
     JWT_ALGORITHM: str = "HS256"

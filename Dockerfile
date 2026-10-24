@@ -36,5 +36,5 @@ RUN pip install --no-cache-dir -e .
 
 EXPOSE 8000
 
-# Auto-execute migrations, run initial ETL load, and start Uvicorn
-CMD ["sh", "-c", "alembic upgrade head && python -m etl.run && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"]
+# Auto-execute migrations, compile SQL views, run idempotent ETL, and start Uvicorn
+CMD ["sh", "-c", "alembic upgrade head && python scripts/init_db.py && python -m etl.run && uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

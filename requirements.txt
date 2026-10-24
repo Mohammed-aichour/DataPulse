@@ -1,0 +1,2 @@
+# DataPulse Root Requirements for Cloud PaaS Deployment (Render / Railway)
+-r backend/requirements.txt
