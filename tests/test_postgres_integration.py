@@ -19,12 +19,19 @@ Usage:
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+from dotenv import load_dotenv
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import sessionmaker
+
+# Explicitly load .env from project root if available
+BASE_DIR = Path(__file__).resolve().parent.parent
+dotenv_path = BASE_DIR / ".env"
+if dotenv_path.exists():
+    load_dotenv(dotenv_path)
 
 from database.models import (
     AcademicRecordModel, CourseModel, StudentModel
