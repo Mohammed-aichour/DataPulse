@@ -8,7 +8,8 @@ server is unavailable, this entire module is explicitly SKIPPED with a descripti
 
 PRODUCTION SAFEGUARD:
 Automatically inspects the target database name to prevent destructive operations
-on production databases (blocks execution if database name contains 'prod', 'live', or 'master').
+on production databases (blocks execution if database name contains 'prod', 'live', 'master',
+or cannot be confidently identified as a dedicated test database).
 
 Usage:
     export TEST_DATABASE_URL="postgresql+psycopg2://datapulse_user:YOUR_SECRET@127.0.0.1:5432/datapulse_test"
@@ -17,6 +18,7 @@ Usage:
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 import pytest
 from alembic import command
 from alembic.config import Config
@@ -37,7 +39,7 @@ TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 if not TEST_DATABASE_URL or ("postgres" not in TEST_DATABASE_URL.lower()):
     pytest.skip(
         "PostgreSQL integration tests SKIPPED: TEST_DATABASE_URL is not set or not a PostgreSQL connection URI. "
-        "To enable, set TEST_DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/test_db",
+        "To enable, configure TEST_DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/datapulse_test in .env",
         allow_module_level=True
     )
 
@@ -48,26 +50,37 @@ if PG_URL.startswith("postgres://"):
 elif PG_URL.startswith("postgresql://") and not PG_URL.startswith("postgresql+"):
     PG_URL = PG_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
-# Task 4 Safeguard: Verify that TEST_DATABASE_URL targets a dedicated test database, not production
-parsed_url_lower = PG_URL.lower()
-db_name = parsed_url_lower.split("/")[-1].split("?")[0] if "/" in parsed_url_lower else ""
+# Task 5 Safeguard: Parse and validate target server & database name
+parsed = urlparse(PG_URL)
+db_name = parsed.path.lstrip("/").split("?")[0].lower() if parsed.path else ""
 PROD_KEYWORDS = ["prod", "production", "live", "master"]
 is_prod_named = any(keyword in db_name for keyword in PROD_KEYWORDS)
 allow_unsafe = os.getenv("ALLOW_UNSAFE_TEST_DB", "false").lower() in ("true", "1", "yes")
 
+# Refuse to run if targeted at production
 if is_prod_named and not allow_unsafe:
     pytest.fail(
-        f"SAFETY HALT: TEST_DATABASE_URL appears to target a production database (dbname='{db_name}')! "
+        f"SAFETY HALT: TEST_DATABASE_URL targets a database with production keyword (dbname='{db_name}')! "
         "PostgreSQL integration tests execute DDL migrations and load test datasets. "
         "Point TEST_DATABASE_URL to a dedicated test/staging database (e.g., 'datapulse_test'). "
-        "Set ALLOW_UNSAFE_TEST_DB=true only if you are certain this is intended."
+        "Set ALLOW_UNSAFE_TEST_DB=true only if you have verified this is an isolated test environment."
     )
 
-# Safeguard against colliding with main DATABASE_URL if not explicitly named test
-app_db_url = os.getenv("DATABASE_URL", "").lower()
-if app_db_url and app_db_url == parsed_url_lower and not ("test" in db_name) and not allow_unsafe:
+# Require test identification if default database name is used (e.g. 'postgres')
+is_explicit_test_db = any(term in db_name for term in ["test", "dev", "stage", "staging", "sandbox"])
+if not is_explicit_test_db and not allow_unsafe:
     pytest.fail(
-        f"SAFETY HALT: TEST_DATABASE_URL is identical to DATABASE_URL and neither contains 'test'! "
+        f"SAFETY HALT: Target database name is '{db_name}', which cannot be confidently identified as a test database. "
+        "To protect application data, TEST_DATABASE_URL must target an explicitly identified test database "
+        "(e.g., 'datapulse_test' or a database name containing 'test', 'dev', or 'sandbox'). "
+        "Set ALLOW_UNSAFE_TEST_DB=true only if you have verified this database is dedicated exclusively to test executions."
+    )
+
+# Safeguard against colliding with main application DATABASE_URL
+app_db_url = os.getenv("DATABASE_URL", "").lower()
+if app_db_url and app_db_url == PG_URL.lower() and not is_explicit_test_db and not allow_unsafe:
+    pytest.fail(
+        f"SAFETY HALT: TEST_DATABASE_URL is identical to DATABASE_URL and does not contain 'test'! "
         "To protect development/application data from test operations, "
         "use a separate test database in TEST_DATABASE_URL (e.g., 'datapulse_test')."
     )
@@ -80,7 +93,7 @@ try:
     _probe_engine.dispose()
 except (OperationalError, Exception) as exc:
     pytest.skip(
-        f"PostgreSQL integration tests SKIPPED: Server at {PG_URL} is unreachable: {exc}",
+        f"PostgreSQL integration tests SKIPPED: Server at {parsed.hostname or 'host'} is unreachable: {exc}",
         allow_module_level=True
     )
 
@@ -171,13 +184,15 @@ def test_postgres_views_compilation(pg_engine):
 
 @pytest.mark.postgres
 def test_postgres_idempotent_etl_loading(pg_session):
-    """Verifies that DatabaseLoader correctly populates PostgreSQL with 674 students and 1,044 enrollments."""
+    """Verifies that DatabaseLoader correctly populates PostgreSQL and is strictly idempotent."""
     loader = DatasetLoader()
     df_mat, df_por, metadata = loader.load_raw_datasets()
     transformer = EducationalTransformer()
     students_df, courses_df, records_df = transformer.transform(df_mat, df_por)
 
     db_loader = DatabaseLoader(db_session=pg_session)
+
+    # First load
     db_loader.load_courses(courses_df)
     db_loader.load_students(students_df)
     db_loader.load_academic_records(records_df)
@@ -189,6 +204,15 @@ def test_postgres_idempotent_etl_loading(pg_session):
     assert count_students == 674, f"Expected 674 students, got {count_students}"
     assert count_courses == 2, f"Expected 2 courses, got {count_courses}"
     assert count_records == 1044, f"Expected 1044 records, got {count_records}"
+
+    # Second load (Idempotency check: counts must remain invariant)
+    db_loader.load_courses(courses_df)
+    db_loader.load_students(students_df)
+    db_loader.load_academic_records(records_df)
+
+    assert pg_session.query(StudentModel).count() == 674
+    assert pg_session.query(CourseModel).count() == 2
+    assert pg_session.query(AcademicRecordModel).count() == 1044
 
 
 @pytest.mark.postgres
@@ -232,3 +256,34 @@ def test_postgres_analytical_views_query(pg_engine):
         # Verify performance tier distribution
         perf_tiers = conn.execute(text("SELECT performance_tier, student_count FROM v_performance_distribution")).fetchall()
         assert len(perf_tiers) > 0
+
+
+@pytest.mark.postgres
+def test_postgres_fastapi_endpoints(pg_session):
+    """Verifies that FastAPI endpoints return accurate data when querying PostgreSQL."""
+    from backend.app.main import app
+    from database.connection import get_db
+    from fastapi.testclient import TestClient
+
+    def override_get_db():
+        try:
+            yield pg_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    client = TestClient(app)
+    try:
+        resp = client.get("/api/analytics/overview")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_students"] == 674
+        assert data["total_enrollments"] == 1044
+        assert data["pass_rate_pct"] == 78.0
+
+        resp_health = client.get("/api/health")
+        assert resp_health.status_code == 200
+        assert resp_health.json()["status"] == "UP"
+        assert resp_health.json()["database"] == "HEALTHY"
+    finally:
+        app.dependency_overrides.clear()
