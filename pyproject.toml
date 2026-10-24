@@ -47,3 +47,7 @@ include = ["backend*", "database*", "src*", "etl*", "ml*", "scripts*"]
 testpaths = ["tests", "backend/tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "strict"
+markers = [
+    "sqlite: tests executed against local SQLite database engine",
+    "postgres: integration tests executed against live PostgreSQL 16 engine via TEST_DATABASE_URL",
+]

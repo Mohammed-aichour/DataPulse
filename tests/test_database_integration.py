@@ -1,9 +1,11 @@
 """
-DataPulse Database Architecture & Integration Test Suite
+DataPulse SQLite Database Architecture & Integration Test Suite
+Explicitly targets local SQLite development/testing environment.
+
 Verifies:
-- Clean schema creation & Alembic migration execution
+- Clean schema creation & Alembic migration execution on SQLite
 - All 6 tables, columns, constraints, unique keys, and indexes
-- Compilation and querying of analytical SQL views
+- Compilation and querying of analytical SQL views on SQLite
 - Idempotent ETL data loading & integrity verification (674 students, 1044 enrollments)
 - Duplicate enrollment rejection via unique constraint
 - Referential integrity enforcement
@@ -32,27 +34,12 @@ from src.pipeline.db_loader import DatabaseLoader
 
 @pytest.fixture(scope="module")
 def temp_db():
-    """Provides an isolated database engine for integration testing.
-    Supports PostgreSQL if TEST_DATABASE_URL is set in environment;
-    otherwise defaults to an isolated temporary SQLite file.
-    """
-    test_db_url = os.getenv("TEST_DATABASE_URL")
-    is_postgres = bool(test_db_url and ("postgres" in test_db_url.lower()))
+    """Provides a fresh isolated SQLite database file for integration testing."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+        db_path = tmp.name
 
-    if is_postgres:
-        db_path = None
-        db_url = test_db_url
-        if db_url.startswith("postgres://"):
-            db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
-        elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
-            db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
-        test_engine = create_engine(db_url, pool_pre_ping=True)
-    else:
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-            db_path = tmp.name
-        db_url = f"sqlite:///{db_path}"
-        test_engine = create_engine(db_url, connect_args={"check_same_thread": False})
-
+    db_url = f"sqlite:///{db_path}"
+    test_engine = create_engine(db_url, connect_args={"check_same_thread": False})
     TestSession = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
     yield {
@@ -64,15 +51,17 @@ def temp_db():
     }
 
     test_engine.dispose()
-    if db_path and os.path.exists(db_path):
+    if os.path.exists(db_path):
         try:
             os.remove(db_path)
         except OSError:
             pass
 
 
+@pytest.mark.sqlite
 def test_alembic_clean_schema_migration(temp_db):
     """Verifies that Alembic upgrade head creates all expected tables and columns on an empty database."""
+    assert temp_db["dialect"] == "sqlite"
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", temp_db["url"])
 
@@ -97,6 +86,7 @@ def test_alembic_clean_schema_migration(temp_db):
     assert "academic_risk" in col_names
 
 
+@pytest.mark.sqlite
 def test_views_compilation_and_querying(temp_db):
     """Verifies that views.sql compiles and executes without SQL syntax errors."""
     views_sql_path = Path("database/sql/views.sql")
@@ -119,6 +109,7 @@ def test_views_compilation_and_querying(temp_db):
         assert res_absence == 0
 
 
+@pytest.mark.sqlite
 def test_idempotent_etl_data_loading(temp_db):
     """Verifies that DatabaseLoader correctly loads exactly 674 students, 2 courses, and 1044 records."""
     loader = DatasetLoader()
@@ -153,6 +144,7 @@ def test_idempotent_etl_data_loading(temp_db):
     session.close()
 
 
+@pytest.mark.sqlite
 def test_unique_constraint_prevents_duplicate_enrollment(temp_db):
     """Verifies that a student cannot be enrolled in the same course twice."""
     session = temp_db["sessionmaker"]()
@@ -177,6 +169,7 @@ def test_unique_constraint_prevents_duplicate_enrollment(temp_db):
     session.close()
 
 
+@pytest.mark.sqlite
 def test_database_views_return_real_data(temp_db):
     """Verifies that analytical SQL views return live aggregated data after seeding."""
     with temp_db["engine"].connect() as conn:
@@ -193,6 +186,7 @@ def test_database_views_return_real_data(temp_db):
         assert len(tiers) > 0
 
 
+@pytest.mark.sqlite
 def test_unreachable_database_error_handling():
     """Verifies that the application handles an unavailable database gracefully without crashing."""
     # Create an engine pointing to an unreachable non-existent database port

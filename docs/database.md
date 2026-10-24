@@ -458,6 +458,8 @@ DataPulse is architected for PostgreSQL wire compatibility with leading managed 
 
 > [!NOTE]
 > The configurations below are architectural reference specifications. DataPulse has not been provisioned on live cloud infrastructure; no zero-downtime deployment properties are claimed without active multi-region cluster testing.
+> For the comprehensive provisioning and connection guide, refer to: [docs/managed_postgres_guide.md](managed_postgres_guide.md).
+> For local Windows Docker Desktop setup, refer to: [docs/windows_docker_setup.md](windows_docker_setup.md).
 
 ### 8.1 Recommended Cloud Providers
 

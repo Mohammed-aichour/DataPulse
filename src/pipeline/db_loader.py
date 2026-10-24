@@ -30,7 +30,7 @@ class DatabaseLoader:
         self.db = db_session if db_session else SessionLocal()
 
     def setup_database_schema(self):
-        """Initializes tables and compiles SQL analytical views."""
+        """Initializes tables and compiles SQL analytical views with dialect awareness."""
         init_db()
 
         # Load views from SQL file
@@ -39,14 +39,17 @@ class DatabaseLoader:
             with open(sql_views_path, "r", encoding="utf-8") as f:
                 sql_content = f.read()
 
+            is_postgres = (engine.dialect.name == "postgresql")
             with engine.connect() as conn:
                 for statement in sql_content.split(";"):
                     stmt = statement.strip()
                     if stmt:
+                        if is_postgres:
+                            stmt = stmt.replace("CREATE VIEW IF NOT EXISTS", "CREATE OR REPLACE VIEW")
                         try:
                             conn.execute(text(stmt))
                             conn.commit()
-                        except Exception as e:
+                        except Exception:
                             # Informational notice (e.g. view already exists)
                             pass
 

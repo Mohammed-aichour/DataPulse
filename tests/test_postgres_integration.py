@@ -1,0 +1,196 @@
+"""
+DataPulse Dedicated PostgreSQL Integration Test Suite
+Explicitly targets a live PostgreSQL 16 database via TEST_DATABASE_URL.
+
+IMPORTANT INTEGRITY RULE:
+Never silently runs against SQLite. If TEST_DATABASE_URL is unset or the PostgreSQL
+server is unavailable, this entire module is explicitly SKIPPED with a descriptive notice.
+
+Usage:
+    export TEST_DATABASE_URL="postgresql+psycopg2://datapulse_user:YOUR_SECRET@127.0.0.1:5432/datapulse_test"
+    pytest -v tests/test_postgres_integration.py
+"""
+
+import os
+from pathlib import Path
+import pytest
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.orm import sessionmaker
+
+from database.models import (
+    AcademicRecordModel, CourseModel, StudentModel
+)
+from src.ingestion.dataset_loader import DatasetLoader
+from src.preprocessing.transformer import EducationalTransformer
+from src.pipeline.db_loader import DatabaseLoader
+
+# Inspect TEST_DATABASE_URL
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+
+if not TEST_DATABASE_URL or ("postgres" not in TEST_DATABASE_URL.lower()):
+    pytest.skip(
+        "PostgreSQL integration tests SKIPPED: TEST_DATABASE_URL is not set or not a PostgreSQL connection URI. "
+        "To enable, set TEST_DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/test_db",
+        allow_module_level=True
+    )
+
+# Normalize URL
+PG_URL = TEST_DATABASE_URL
+if PG_URL.startswith("postgres://"):
+    PG_URL = PG_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+elif PG_URL.startswith("postgresql://") and not PG_URL.startswith("postgresql+"):
+    PG_URL = PG_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+# Liveness probe to avoid hanging if server is down
+try:
+    _probe_engine = create_engine(PG_URL, connect_args={"connect_timeout": 3})
+    with _probe_engine.connect() as _probe_conn:
+        _version = _probe_conn.execute(text("SELECT version()")).scalar()
+    _probe_engine.dispose()
+except (OperationalError, Exception) as exc:
+    pytest.skip(
+        f"PostgreSQL integration tests SKIPPED: Server at {PG_URL} is unreachable: {exc}",
+        allow_module_level=True
+    )
+
+
+@pytest.fixture(scope="module")
+def pg_engine():
+    """Provides an active PostgreSQL SQLAlchemy engine for the test module."""
+    engine = create_engine(
+        PG_URL,
+        pool_pre_ping=True,
+        echo=False
+    )
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture(scope="module")
+def pg_session(pg_engine):
+    """Provides a transactional session on PostgreSQL."""
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=pg_engine)
+    session = Session()
+    yield session
+    session.close()
+
+
+@pytest.mark.postgres
+def test_postgres_live_connection_and_dialect(pg_engine):
+    """Verifies that the target engine is genuinely PostgreSQL."""
+    assert pg_engine.dialect.name == "postgresql", f"Expected postgresql dialect, got {pg_engine.dialect.name}"
+    with pg_engine.connect() as conn:
+        version_str = conn.execute(text("SELECT version()")).scalar()
+        assert "PostgreSQL" in version_str, f"Unexpected version string: {version_str}"
+        print(f"\n[PostgreSQL Live Probe] Connected to: {version_str[:50]}...")
+
+
+@pytest.mark.postgres
+def test_postgres_alembic_migrations(pg_engine):
+    """Verifies that Alembic upgrade head runs cleanly on PostgreSQL creating all 6 tables."""
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", PG_URL)
+
+    # Run upgrade head
+    command.upgrade(cfg, "head")
+
+    inspector = inspect(pg_engine)
+    tables = inspector.get_table_names()
+
+    expected_tables = {
+        "students", "courses", "academic_records",
+        "pipeline_executions", "prediction_logs", "data_imports"
+    }
+    assert expected_tables.issubset(set(tables)), f"Missing PostgreSQL tables in {tables}"
+
+    # Verify native PostgreSQL column types
+    columns = {c["name"]: str(c["type"]) for c in inspector.get_columns("academic_records")}
+    assert "passing_status" in columns
+    assert "BOOLEAN" in columns["passing_status"].upper()
+
+
+@pytest.mark.postgres
+def test_postgres_views_compilation(pg_engine):
+    """Verifies that views.sql compiles cleanly with PostgreSQL syntax (CREATE OR REPLACE VIEW)."""
+    views_sql_path = Path("database/sql/views.sql")
+    assert views_sql_path.exists(), "views.sql missing"
+
+    sql_content = views_sql_path.read_text(encoding="utf-8")
+    statements = [stmt.strip() for stmt in sql_content.split(";") if stmt.strip()]
+
+    with pg_engine.connect() as conn:
+        for stmt in statements:
+            # PostgreSQL requires CREATE OR REPLACE VIEW instead of CREATE VIEW IF NOT EXISTS
+            pg_stmt = stmt.replace("CREATE VIEW IF NOT EXISTS", "CREATE OR REPLACE VIEW")
+            conn.execute(text(pg_stmt))
+        conn.commit()
+
+        # Query compiled views
+        res_overview = conn.execute(text("SELECT COUNT(*) FROM v_student_overview")).scalar()
+        res_course = conn.execute(text("SELECT COUNT(*) FROM v_course_performance")).scalar()
+        assert res_overview is not None
+        assert res_course is not None
+
+
+@pytest.mark.postgres
+def test_postgres_idempotent_etl_loading(pg_session):
+    """Verifies that DatabaseLoader correctly populates PostgreSQL with 674 students and 1,044 enrollments."""
+    loader = DatasetLoader()
+    df_mat, df_por, metadata = loader.load_raw_datasets()
+    transformer = EducationalTransformer()
+    students_df, courses_df, records_df = transformer.transform(df_mat, df_por)
+
+    db_loader = DatabaseLoader(db_session=pg_session)
+    db_loader.load_courses(courses_df)
+    db_loader.load_students(students_df)
+    db_loader.load_academic_records(records_df)
+
+    count_students = pg_session.query(StudentModel).count()
+    count_courses = pg_session.query(CourseModel).count()
+    count_records = pg_session.query(AcademicRecordModel).count()
+
+    assert count_students == 674, f"Expected 674 students, got {count_students}"
+    assert count_courses == 2, f"Expected 2 courses, got {count_courses}"
+    assert count_records == 1044, f"Expected 1044 records, got {count_records}"
+
+
+@pytest.mark.postgres
+def test_postgres_unique_constraint_enforcement(pg_session):
+    """Verifies that PostgreSQL enforces uq_student_course composite unique constraint."""
+    dup_record = AcademicRecordModel(
+        record_id="REC-PG-TEST-DUP",
+        student_id="STU-0001",
+        course_id=1,  # MAT already exists for STU-0001
+        course_code="MAT",
+        traveltime=1, studytime=2, failures=0, schoolsup="no", famsup="no",
+        paid="no", activities="yes", higher="yes", romantic="no", famrel=4,
+        freetime=3, goout=3, dalc=1, walc=1, health=5, absences=0,
+        g1=12, g2=13, g3=14, parent_edu_avg=3.0, alcohol_index=1.0,
+        study_to_social_ratio=0.3, grade_delta=1, academic_risk=0,
+        passing_status=True, performance_tier="Satisfactory"
+    )
+
+    with pytest.raises(IntegrityError):
+        pg_session.add(dup_record)
+        pg_session.commit()
+    pg_session.rollback()
+
+
+@pytest.mark.postgres
+def test_postgres_analytical_views_query(pg_engine):
+    """Verifies that PostgreSQL analytical views return accurate aggregations on loaded data."""
+    with pg_engine.connect() as conn:
+        res = conn.execute(text("SELECT course_code, total_enrollments, pass_rate_pct FROM v_course_performance ORDER BY course_code")).fetchall()
+        assert len(res) == 2
+        # MAT: 395 records, POR: 649 records
+        row_mat = res[0]
+        row_por = res[1]
+        assert row_mat[0] == "MAT" and row_mat[1] == 395
+        assert row_por[0] == "POR" and row_por[1] == 649
+
+        # Verify absence tier binning
+        tiers = conn.execute(text("SELECT absence_tier, student_count FROM v_absence_impact")).fetchall()
+        assert len(tiers) > 0

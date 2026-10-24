@@ -30,6 +30,7 @@ def initialize_database():
     print("=" * 70)
     print("  DATAPULSE DATABASE INITIALIZATION")
     print(f"  Target Engine: {engine.url}")
+    print(f"  Dialect:       {engine.dialect.name}")
     print("=" * 70)
 
     print("\n[Step 1/2] Creating relational tables registered with SQLAlchemy Base...")
@@ -40,14 +41,16 @@ def initialize_database():
     views_sql_path = root_dir / "database" / "sql" / "views.sql"
     if views_sql_path.exists():
         sql_content = views_sql_path.read_text(encoding="utf-8")
-        # Split statements on semicolon
         statements = [stmt.strip() for stmt in sql_content.split(";") if stmt.strip()]
+        is_postgres = (engine.dialect.name == "postgresql")
         db = SessionLocal()
         try:
             for stmt in statements:
+                if is_postgres:
+                    stmt = stmt.replace("CREATE VIEW IF NOT EXISTS", "CREATE OR REPLACE VIEW")
                 db.execute(text(stmt))
             db.commit()
-            print(f"  * Compiled {len(statements)} analytical SQL views successfully.")
+            print(f"  * Compiled {len(statements)} analytical SQL views successfully ({engine.dialect.name} dialect).")
         except Exception as e:
             db.rollback()
             print(f"  ! Note on SQL view compilation: {e}")

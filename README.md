@@ -264,10 +264,12 @@ docker compose up --build -d
 > [!IMPORTANT]
 > **Host Environment Status**: Docker Compose execution on this specific Windows host machine is classified as **NOT TESTED** because the Docker CLI is not installed in the Windows environment (`docker: The term 'docker' is not recognized`). 
 > All Dockerfiles, compose specifications, environment variable bindings, and migration scripts are fully authored and syntactically verified.
+> For complete step-by-step setup instructions on Windows 11, see: [docs/windows_docker_setup.md](docs/windows_docker_setup.md).
+> For connecting to cloud-managed PostgreSQL (Neon, Supabase, Render, AWS RDS), see: [docs/managed_postgres_guide.md](docs/managed_postgres_guide.md).
 
 ### How to Run and Verify PostgreSQL with Docker:
 ```bash
-# 1. Create .env with strong secrets
+# 1. Create .env with strong secrets (no weak fallbacks permitted)
 cp .env.example .env
 # Edit .env and set secure POSTGRES_PASSWORD and JWT_SECRET
 
@@ -296,19 +298,20 @@ alembic upgrade head
 # Ingest dataset idempotently into PostgreSQL
 python -m etl.run
 
-# Execute test suite against PostgreSQL
-pytest -v
+# Execute dedicated PostgreSQL integration test suite
+pytest -v tests/test_postgres_integration.py
 ```
 
 ---
 
 ## 9. Automated Testing & Verification Summary
 
-### Database Engine Context:
-- **Default Local & CI Test Suite Engine**: **SQLite** (all 29 unit, integration, and API tests run against SQLite with 100% pass rate in 8.45s).
-- **PostgreSQL Integration Capability**: The integration suite dynamically targets PostgreSQL whenever `TEST_DATABASE_URL` is set to a PostgreSQL connection URI.
+### Database Engine Separation & Test Isolation:
+- **Default Local & CI Test Suite Engine**: **SQLite** (all 29 unit, integration, and API tests run against SQLite with 100% pass rate in 6.95s).
+- **Dedicated PostgreSQL Integration Suite (`tests/test_postgres_integration.py`)**: Explicitly configured for PostgreSQL 16 via `TEST_DATABASE_URL`.
+- **Zero Silent Fallback Integrity Guarantee**: The test suite **never silently runs PostgreSQL tests against SQLite**. If `TEST_DATABASE_URL` is unset or the PostgreSQL server is unreachable, `pytest` explicitly reports the tests as **SKIPPED** with a clear explanation.
 
-Full Pytest suite execution across all 29 tests:
+Full Pytest suite execution across all test suites:
 ```text
 tests/test_database_integration.py::test_alembic_clean_schema_migration PASSED [  3%]
 tests/test_database_integration.py::test_views_compilation_and_querying PASSED [  6%]
@@ -339,7 +342,11 @@ backend/tests/test_api_endpoints.py::test_analytics_overview PASSED      [ 89%]
 backend/tests/test_api_endpoints.py::test_students_pagination PASSED     [ 93%]
 backend/tests/test_api_endpoints.py::test_predict_scenario_a PASSED      [ 96%]
 backend/tests/test_api_endpoints.py::test_predict_scenario_c PASSED      [100%]
-======================= 29 passed in 8.45s (100% pass rate) =======================
+
+=========================== short test summary info ===========================
+SKIPPED [1] tests/test_postgres_integration.py: PostgreSQL integration tests SKIPPED:
+TEST_DATABASE_URL is not set or not a PostgreSQL connection URI.
+================== 29 passed, 1 skipped, 1 warning in 6.95s ===================
 ```
 
 Frontend production build verification:

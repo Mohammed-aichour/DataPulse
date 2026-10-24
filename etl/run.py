@@ -6,6 +6,7 @@ Command line execution:
     python -m etl.run
 """
 
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -19,18 +20,22 @@ for p in [str(root_dir), str(parent_of_root)]:
         sys.path.insert(0, p)
 
 try:
+    from database.connection import SessionLocal
+    from database.models import StudentModel, AcademicRecordModel
     from src.ingestion.dataset_loader import DatasetLoader
     from src.preprocessing.validator import DataValidator
     from src.preprocessing.transformer import EducationalTransformer
     from src.pipeline.db_loader import DatabaseLoader
 except ImportError:
+    from database.connection import SessionLocal
+    from database.models import StudentModel, AcademicRecordModel
     from src.ingestion.dataset_loader import DatasetLoader
     from src.preprocessing.validator import DataValidator
     from src.preprocessing.transformer import EducationalTransformer
     from src.pipeline.db_loader import DatabaseLoader
 
 
-def run_etl() -> dict:
+def run_etl(force_reload: bool = False) -> dict:
     start_time = time.time()
     started_at = datetime.now(timezone.utc).isoformat()
 
@@ -38,6 +43,33 @@ def run_etl() -> dict:
     print("  DATAPULSE ETL PIPELINE: EXTRACT -> VALIDATE -> TRANSFORM -> LOAD")
     print(f"  Execution Started: {started_at}")
     print("=" * 75)
+
+    # Production State Guard: Check if database is already populated
+    force = force_reload or (os.getenv("ETL_FORCE_RELOAD", "false").lower() in ("true", "1", "yes"))
+    session = SessionLocal()
+    try:
+        existing_students = session.query(StudentModel).count()
+        existing_records = session.query(AcademicRecordModel).count()
+    except Exception:
+        existing_students = 0
+        existing_records = 0
+    finally:
+        session.close()
+
+    if existing_students > 0 and existing_records > 0 and not force:
+        duration = round(time.time() - start_time, 2)
+        print("\n[Production State Guard: Database Already Populated]")
+        print(f"  * Detected {existing_students} existing students and {existing_records} academic records.")
+        print("  * Skipped raw data ingestion to prevent overwriting existing production records.")
+        print("  * Note: Set environment variable ETL_FORCE_RELOAD=true to force a full re-import.")
+        print("=" * 75)
+        return {
+            "status": "SKIPPED_ALREADY_POPULATED",
+            "duration_seconds": duration,
+            "records_processed": existing_records,
+            "unique_students": existing_students,
+            "details": "Database already populated. Existing production records preserved."
+        }
 
     # 1. EXTRACT
     print("\n[Phase 1/4: EXTRACT]")
