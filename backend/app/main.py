@@ -31,7 +31,11 @@ from database.connection import init_db
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure tables exist
-    print(f"[DataPulse API] Initializing database schema on {settings.DATABASE_URL}...")
+    from urllib.parse import urlparse
+    _pdb = urlparse(settings.DATABASE_URL)
+    _host = _pdb.hostname or "local"
+    _path = _pdb.path or ""
+    print(f"[DataPulse API] Initializing database schema on {_pdb.scheme}://{_host}{_path}...")
     init_db()
     print("[DataPulse API] Startup initialization complete.")
     yield
