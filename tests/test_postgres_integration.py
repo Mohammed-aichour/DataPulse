@@ -6,6 +6,10 @@ IMPORTANT INTEGRITY RULE:
 Never silently runs against SQLite. If TEST_DATABASE_URL is unset or the PostgreSQL
 server is unavailable, this entire module is explicitly SKIPPED with a descriptive notice.
 
+PRODUCTION SAFEGUARD:
+Automatically inspects the target database name to prevent destructive operations
+on production databases (blocks execution if database name contains 'prod', 'live', or 'master').
+
 Usage:
     export TEST_DATABASE_URL="postgresql+psycopg2://datapulse_user:YOUR_SECRET@127.0.0.1:5432/datapulse_test"
     pytest -v tests/test_postgres_integration.py
@@ -43,6 +47,30 @@ if PG_URL.startswith("postgres://"):
     PG_URL = PG_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 elif PG_URL.startswith("postgresql://") and not PG_URL.startswith("postgresql+"):
     PG_URL = PG_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+# Task 4 Safeguard: Verify that TEST_DATABASE_URL targets a dedicated test database, not production
+parsed_url_lower = PG_URL.lower()
+db_name = parsed_url_lower.split("/")[-1].split("?")[0] if "/" in parsed_url_lower else ""
+PROD_KEYWORDS = ["prod", "production", "live", "master"]
+is_prod_named = any(keyword in db_name for keyword in PROD_KEYWORDS)
+allow_unsafe = os.getenv("ALLOW_UNSAFE_TEST_DB", "false").lower() in ("true", "1", "yes")
+
+if is_prod_named and not allow_unsafe:
+    pytest.fail(
+        f"SAFETY HALT: TEST_DATABASE_URL appears to target a production database (dbname='{db_name}')! "
+        "PostgreSQL integration tests execute DDL migrations and load test datasets. "
+        "Point TEST_DATABASE_URL to a dedicated test/staging database (e.g., 'datapulse_test'). "
+        "Set ALLOW_UNSAFE_TEST_DB=true only if you are certain this is intended."
+    )
+
+# Safeguard against colliding with main DATABASE_URL if not explicitly named test
+app_db_url = os.getenv("DATABASE_URL", "").lower()
+if app_db_url and app_db_url == parsed_url_lower and not ("test" in db_name) and not allow_unsafe:
+    pytest.fail(
+        f"SAFETY HALT: TEST_DATABASE_URL is identical to DATABASE_URL and neither contains 'test'! "
+        "To protect development/application data from test operations, "
+        "use a separate test database in TEST_DATABASE_URL (e.g., 'datapulse_test')."
+    )
 
 # Liveness probe to avoid hanging if server is down
 try:
@@ -85,7 +113,7 @@ def test_postgres_live_connection_and_dialect(pg_engine):
     with pg_engine.connect() as conn:
         version_str = conn.execute(text("SELECT version()")).scalar()
         assert "PostgreSQL" in version_str, f"Unexpected version string: {version_str}"
-        print(f"\n[PostgreSQL Live Probe] Connected to: {version_str[:50]}...")
+        print(f"\n[PostgreSQL Live Probe] Connected to: {version_str[:60]}...")
 
 
 @pytest.mark.postgres
@@ -128,11 +156,17 @@ def test_postgres_views_compilation(pg_engine):
             conn.execute(text(pg_stmt))
         conn.commit()
 
-        # Query compiled views
+        # Query all compiled analytical views
         res_overview = conn.execute(text("SELECT COUNT(*) FROM v_student_overview")).scalar()
         res_course = conn.execute(text("SELECT COUNT(*) FROM v_course_performance")).scalar()
+        res_risk = conn.execute(text("SELECT COUNT(*) FROM v_risk_analysis")).scalar()
+        res_absence = conn.execute(text("SELECT COUNT(*) FROM v_absence_impact")).scalar()
+        res_tier = conn.execute(text("SELECT COUNT(*) FROM v_performance_distribution")).scalar()
         assert res_overview is not None
         assert res_course is not None
+        assert res_risk is not None
+        assert res_absence is not None
+        assert res_tier is not None
 
 
 @pytest.mark.postgres
@@ -194,3 +228,7 @@ def test_postgres_analytical_views_query(pg_engine):
         # Verify absence tier binning
         tiers = conn.execute(text("SELECT absence_tier, student_count FROM v_absence_impact")).fetchall()
         assert len(tiers) > 0
+
+        # Verify performance tier distribution
+        perf_tiers = conn.execute(text("SELECT performance_tier, student_count FROM v_performance_distribution")).fetchall()
+        assert len(perf_tiers) > 0

@@ -1,8 +1,10 @@
 """
 Health & System Information Endpoints
+Sanitizes error responses to avoid leaking database hosts, usernames, or internal topologies.
 """
 
 from datetime import datetime, timezone
+import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -12,6 +14,7 @@ from database.connection import get_db
 from database.models import AcademicRecordModel, StudentModel
 from src.ml.predictor import PredictorService
 
+logger = logging.getLogger("datapulse.health")
 router = APIRouter(tags=["System"])
 
 
@@ -21,13 +24,15 @@ def get_health(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
     except Exception as e:
-        db_status = f"UNHEALTHY: {str(e)}"
+        logger.error(f"[HealthCheck] Database connection error: {e}")
+        # Return sanitized non-leaking error status
+        db_status = f"UNHEALTHY: {type(e).__name__}"
 
     predictor = PredictorService()
     ml_status = "READY" if predictor.is_ready() else "NOT_TRAINED"
 
     return HealthResponse(
-        status="UP",
+        status="UP" if "HEALTHY" in db_status else "DEGRADED",
         timestamp=datetime.now(timezone.utc).isoformat(),
         database=db_status,
         ml_models=ml_status,
