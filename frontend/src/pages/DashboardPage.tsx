@@ -23,7 +23,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { api } from "../services/api";
+import { api, API_BASE_URL } from "../services/api";
 import { CoursePerformance, GradeDistributionBin, OverviewKPIs } from "../types";
 
 export const DashboardPage: React.FC = () => {
@@ -71,7 +71,7 @@ export const DashboardPage: React.FC = () => {
         <h3 className="font-bold text-base">Backend Connection Notice</h3>
         <p className="text-sm mt-1">{error}</p>
         <p className="text-xs text-red-600 mt-2">
-          Make sure the FastAPI backend is running on <code>http://localhost:8000</code> and the database has been loaded.
+          Make sure the FastAPI backend is running and reachable ({API_BASE_URL}), and the database has been loaded.
         </p>
       </div>
     );
