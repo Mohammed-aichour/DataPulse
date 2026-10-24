@@ -19,7 +19,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://datapulse-opal.vercel.app,http://localhost:3000,*"
 
 databases:
   - name: datapulse-db
